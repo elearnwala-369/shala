@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shala AI — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#1c2430; --bg:#f4f2ee; --card:#fff; --border:#e2ddd0;
+  --saffron:#e8640a; --blue:#1c75bc; --green:#2f8f5b; --red:#c0392b; --muted:#7c7264;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;}
+.mr{font-family:'Noto Sans Devanagari',sans-serif;}
+header{background:linear-gradient(120deg,var(--saffron),#fbb03b);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;}
+header h1{margin:0;font-size:17px;}
+header button{background:rgba(255,255,255,0.2);border:none;color:#fff;padding:7px 14px;border-radius:8px;font-weight:700;cursor:pointer;}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 60px;}
+
+/* Login screen */
+.login-wrap{max-width:360px;margin:80px auto;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:28px;}
+.login-wrap h2{margin-top:0;font-size:18px;}
+.login-wrap input{width:100%;padding:11px 12px;margin-bottom:10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;}
+.login-wrap button{width:100%;padding:12px;border:none;border-radius:8px;background:var(--blue);color:#fff;font-weight:700;cursor:pointer;font-size:14px;}
+.login-err{color:var(--red);font-size:13px;margin-top:8px;}
+
+/* Tabs */
+.tabs{display:flex;gap:8px;margin:18px 0;flex-wrap:wrap;}
+.tab{padding:9px 16px;border-radius:20px;background:var(--card);border:1.5px solid var(--border);cursor:pointer;font-weight:600;font-size:13.5px;}
+.tab.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+
+/* Stats */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:20px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:center;}
+.stat-num{font-size:24px;font-weight:800;color:var(--blue);}
+.stat-label{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+/* Table */
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;border:1px solid var(--border);}
+th,td{padding:10px 12px;text-align:left;font-size:13px;border-bottom:1px solid var(--border);}
+th{background:#faf5ea;font-weight:700;color:var(--muted);font-size:11.5px;text-transform:uppercase;}
+tr:last-child td{border-bottom:none;}
+.badge{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-active{background:#e6f5ec;color:var(--green);}
+.badge-demo{background:#eaf3fa;color:var(--blue);}
+.badge-inactive{background:#fce8e6;color:var(--red);}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.btn{padding:6px 11px;border-radius:7px;border:1.5px solid var(--border);background:#fff;font-size:11.5px;font-weight:700;cursor:pointer;}
+.btn-activate{border-color:var(--green);color:var(--green);}
+.btn-deactivate{border-color:var(--red);color:var(--red);}
+.btn-demo{border-color:var(--blue);color:var(--blue);}
+
+.search-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.search-row input,.search-row select{padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;}
+.search-row input{flex:1;min-width:180px;}
+
+/* Forms */
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:18px;}
+.form-card h3{margin-top:0;font-size:14px;}
+.form-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;}
+.form-row input,.form-row select{flex:1;min-width:130px;padding:9px 11px;border:1.5px solid var(--border);border-radius:8px;font-size:13px;}
+.btn-primary{background:var(--saffron);color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:13.5px;}
+
+.offer-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.offer-code{font-weight:800;color:var(--saffron);}
+.offer-desc{font-size:12px;color:var(--muted);}
+
+.upload-drop{border:2px dashed var(--saffron);border-radius:12px;padding:24px;text-align:center;cursor:pointer;background:#fff8ee;margin-bottom:14px;}
+.doc-row{display:flex;justify-content:space-between;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:13px;}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1c2430;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;}
+.toast.show{opacity:1;}
+.empty-note{color:var(--muted);font-size:13px;text-align:center;padding:20px;}
+</style>
+</head>
+<body>
+
+<div id="loginScreen" class="login-wrap">
+  <h2 class="mr">🔐 Admin Login</h2>
+  <input type="text" id="adminUser" placeholder="Username">
+  <input type="password" id="adminPass" placeholder="Password">
+  <button onclick="doAdminLogin()">Login</button>
+  <div class="login-err" id="loginErr"></div>
+</div>
+
+<div id="appScreen" style="display:none;">
+  <header>
+    <h1 class="mr">🏫 Shala AI — Admin Panel</h1>
+    <button onclick="logout()">Logout</button>
+  </header>
+  <main>
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="tabs">
+      <div class="tab active" data-tab="users">वापरकर्ते (Users)</div>
+      <div class="tab" data-tab="documents">दस्तऐवज (Documents)</div>
+      <div class="tab" data-tab="offers">ऑफर्स (Offers)</div>
+    </div>
+
+    <!-- USERS -->
+    <div id="tab-users">
+      <div class="search-row">
+        <input type="text" id="userSearch" placeholder="फोन / नाव / शाळा शोधा..." oninput="loadUsers()">
+        <select id="statusFilter" onchange="loadUsers()">
+          <option value="">सर्व स्थिती</option>
+          <option value="demo">Demo</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+        </select>
+      </div>
+      <table>
+        <thead><tr><th>फोन</th><th>नाव / शाळा</th><th>स्थिती</th><th>मुदत</th><th>क्रिया</th></tr></thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+      <div class="empty-note" id="usersEmpty" style="display:none;">कोणतेही वापरकर्ते सापडले नाहीत.</div>
+    </div>
+
+    <!-- DOCUMENTS -->
+    <div id="tab-documents" style="display:none;">
+      <div class="form-card">
+        <h3 class="mr">📤 नवीन PDF अपलोड करा</h3>
+        <div class="form-row">
+          <select id="docClass"><option value="">इयत्ता</option><script>for(let i=1;i<=10;i++)document.write(`<option>${i}</option>`)</script></select>
+          <select id="docMedium"><option>Marathi</option><option>Hindi</option><option>English</option><option>Urdu</option></select>
+          <input type="text" id="docSubject" placeholder="विषय (उदा. Mathematics)">
+        </div>
+        <label class="upload-drop" for="docFile">
+          <div class="mr" style="font-weight:700;">📄 PDF निवडा</div>
+          <input type="file" id="docFile" accept="application/pdf" style="position:absolute;width:1px;height:1px;opacity:0;">
+        </label>
+        <button class="btn-primary" onclick="uploadDoc()">अपलोड करा</button>
+        <div id="uploadStatus" style="margin-top:10px;font-size:12.5px;"></div>
+      </div>
+      <div id="docsList"></div>
+      <div class="empty-note" id="docsEmpty" style="display:none;">कोणतेही दस्तऐवज नाहीत.</div>
+    </div>
+
+    <!-- OFFERS -->
+    <div id="tab-offers" style="display:none;">
+      <div class="form-card">
+        <h3 class="mr">🎁 नवीन ऑफर तयार करा</h3>
+        <div class="form-row">
+          <input type="text" id="offerCode" placeholder="कोड (उदा. DIWALI25)">
+          <input type="number" id="offerDiscount" placeholder="सूट %">
+          <input type="date" id="offerExpiry">
+        </div>
+        <div class="form-row">
+          <input type="text" id="offerDesc" placeholder="वर्णन" style="flex:2;">
+        </div>
+        <button class="btn-primary" onclick="createOffer()">ऑफर तयार करा</button>
+      </div>
+      <div id="offersList"></div>
+      <div class="empty-note" id="offersEmpty" style="display:none;">कोणत्याही ऑफर्स नाहीत.</div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const BACKEND_URL = ""; // same origin as this admin page — leave blank when served from the backend's /admin route
+let adminToken = null;
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(`${BACKEND_URL}${path}`, {
+    ...opts,
+    headers: { ...(opts.headers || {}), Authorization: `Bearer ${adminToken}` }
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'काहीतरी चूक झाली.');
+  return data;
+}
+
+async function doAdminLogin() {
+  const username = document.getElementById('adminUser').value.trim();
+  const password = document.getElementById('adminPass').value;
+  const errEl = document.getElementById('loginErr');
+  errEl.textContent = '';
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/auth/admin-login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login अयशस्वी.');
+    adminToken = data.token;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display = 'block';
+    loadStats(); loadUsers();
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+}
+function logout() {
+  adminToken = null;
+  document.getElementById('appScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'block';
+}
+
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    ['users', 'documents', 'offers'].forEach(name => {
+      document.getElementById('tab-' + name).style.display = (name === t.dataset.tab) ? 'block' : 'none';
+    });
+    if (t.dataset.tab === 'documents') loadDocs();
+    if (t.dataset.tab === 'offers') loadOffers();
+  };
+});
+
+// ---- Stats ----
+async function loadStats() {
+  try {
+    const s = await api('/api/admin/stats');
+    document.getElementById('statsRow').innerHTML = `
+      <div class="stat-card"><div class="stat-num">${s.totalUsers}</div><div class="stat-label mr">एकूण वापरकर्ते</div></div>
+      <div class="stat-card"><div class="stat-num">${s.active}</div><div class="stat-label mr">Active</div></div>
+      <div class="stat-card"><div class="stat-num">${s.demo}</div><div class="stat-label mr">Demo</div></div>
+      <div class="stat-card"><div class="stat-num">${s.inactive}</div><div class="stat-label mr">Inactive</div></div>
+      <div class="stat-card"><div class="stat-num">${s.totalDocuments}</div><div class="stat-label mr">दस्तऐवज</div></div>
+    `;
+  } catch (e) { toast(e.message); }
+}
+
+// ---- Users ----
+async function loadUsers() {
+  const q = document.getElementById('userSearch').value;
+  const status = document.getElementById('statusFilter').value;
+  const params = new URLSearchParams();
+  if (q) params.set('q', q);
+  if (status) params.set('status', status);
+  try {
+    const users = await api('/api/admin/users?' + params.toString());
+    const body = document.getElementById('usersBody');
+    document.getElementById('usersEmpty').style.display = users.length ? 'none' : 'block';
+    body.innerHTML = users.map(u => `
+      <tr>
+        <td>${u.phone}</td>
+        <td>${u.name || '—'}<br><span style="color:var(--muted);font-size:11px;">${u.school || ''}</span></td>
+        <td><span class="badge badge-${u.status}">${u.status}</span></td>
+        <td style="font-size:11.5px;">${u.status === 'demo' ? 'Demo: ' + fmtDate(u.demoExpiresAt) : (u.subscriptionExpiresAt ? fmtDate(u.subscriptionExpiresAt) : (u.status === 'active' ? 'अमर्यादित' : '—'))}</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-activate" onclick="activateUser('${u.id}')">Activate</button>
+            <button class="btn btn-deactivate" onclick="deactivateUser('${u.id}')">Deactivate</button>
+            <button class="btn btn-demo" onclick="extendDemo('${u.id}')">+7d Demo</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  } catch (e) { toast(e.message); }
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+async function activateUser(id) {
+  const days = prompt('किती दिवसांसाठी subscription active करायचं? (रिकामं ठेवल्यास अमर्यादित)');
+  try {
+    await api(`/api/admin/users/${id}/activate`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscriptionDays: days ? Number(days) : undefined })
+    });
+    toast('Activated ✅'); loadUsers(); loadStats();
+  } catch (e) { toast(e.message); }
+}
+async function deactivateUser(id) {
+  if (!confirm('या वापरकर्त्याला deactivate करायचं आहे का?')) return;
+  try {
+    await api(`/api/admin/users/${id}/deactivate`, { method: 'POST' });
+    toast('Deactivated'); loadUsers(); loadStats();
+  } catch (e) { toast(e.message); }
+}
+async function extendDemo(id) {
+  try {
+    await api(`/api/admin/users/${id}/extend-demo`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ days: 7 })
+    });
+    toast('Demo वाढवला ✅'); loadUsers(); loadStats();
+  } catch (e) { toast(e.message); }
+}
+
+// ---- Documents ----
+async function loadDocs() {
+  try {
+    const docs = await api('/api/documents');
+    const list = document.getElementById('docsList');
+    document.getElementById('docsEmpty').style.display = docs.length ? 'none' : 'block';
+    list.innerHTML = docs.map(d => `
+      <div class="doc-row">
+        <div>📘 <b>${d.name}</b> — इयत्ता ${d.classNum} · ${d.medium} · ${d.subject} · ${d.chunkCount} chunks</div>
+        <button class="btn btn-deactivate" onclick="deleteDoc('${d.id}')">काढा</button>
+      </div>
+    `).join('');
+  } catch (e) { toast(e.message); }
+}
+async function deleteDoc(id) {
+  if (!confirm('हे दस्तऐवज काढायचं आहे का?')) return;
+  try {
+    await api(`/api/documents/${id}`, { method: 'DELETE' });
+    toast('काढलं'); loadDocs(); loadStats();
+  } catch (e) { toast(e.message); }
+}
+async function uploadDoc() {
+  const classNum = document.getElementById('docClass').value;
+  const medium = document.getElementById('docMedium').value;
+  const subject = document.getElementById('docSubject').value.trim();
+  const file = document.getElementById('docFile').files[0];
+  const statusEl = document.getElementById('uploadStatus');
+  if (!classNum || !subject || !file) { statusEl.textContent = '⚠️ इयत्ता, विषय व फाईल आवश्यक आहेत.'; return; }
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('classNum', classNum);
+  formData.append('medium', medium);
+  formData.append('subject', subject);
+
+  statusEl.textContent = '⏳ अपलोड होत आहे...';
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/documents/upload`, {
+      method: 'POST', headers: { Authorization: `Bearer ${adminToken}` }, body: formData
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    statusEl.textContent = `✅ यशस्वी — ${data.pages} pages, ${data.chunkCount} chunks`;
+    document.getElementById('docFile').value = '';
+    loadDocs(); loadStats();
+  } catch (e) {
+    statusEl.textContent = '❌ ' + e.message;
+  }
+}
+
+// ---- Offers ----
+async function loadOffers() {
+  try {
+    const offers = await api('/api/admin/offers');
+    const list = document.getElementById('offersList');
+    document.getElementById('offersEmpty').style.display = offers.length ? 'none' : 'block';
+    list.innerHTML = offers.map(o => `
+      <div class="offer-card">
+        <div>
+          <span class="offer-code">${o.code}</span> — ${o.discountPercent}% सूट
+          <div class="offer-desc">${o.description || ''} ${o.expiresAt ? '· संपते: ' + fmtDate(o.expiresAt) : ''}</div>
+        </div>
+        <div class="row-actions">
+          <button class="btn ${o.active ? 'btn-deactivate' : 'btn-activate'}" onclick="toggleOffer('${o.id}', ${!o.active})">${o.active ? 'बंद करा' : 'सुरू करा'}</button>
+          <button class="btn btn-deactivate" onclick="deleteOffer('${o.id}')">काढा</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) { toast(e.message); }
+}
+async function createOffer() {
+  const code = document.getElementById('offerCode').value.trim();
+  const discountPercent = Number(document.getElementById('offerDiscount').value || 0);
+  const expiresAt = document.getElementById('offerExpiry').value || null;
+  const description = document.getElementById('offerDesc').value.trim();
+  if (!code) { toast('Offer code आवश्यक आहे.'); return; }
+  try {
+    await api('/api/admin/offers', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, discountPercent, expiresAt, description })
+    });
+    toast('ऑफर तयार झाली ✅');
+    document.getElementById('offerCode').value = '';
+    document.getElementById('offerDiscount').value = '';
+    document.getElementById('offerDesc').value = '';
+    loadOffers();
+  } catch (e) { toast(e.message); }
+}
+async function toggleOffer(id, active) {
+  try {
+    await api(`/api/admin/offers/${id}/toggle`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active })
+    });
+    loadOffers();
+  } catch (e) { toast(e.message); }
+}
+async function deleteOffer(id) {
+  if (!confirm('ही ऑफर काढायची आहे का?')) return;
+  try {
+    await api(`/api/admin/offers/${id}`, { method: 'DELETE' });
+    toast('काढली'); loadOffers();
+  } catch (e) { toast(e.message); }
+}
+</script>
+</body>
+</html>

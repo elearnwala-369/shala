@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="mr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>शाळा AI — मराठी शिक्षण</title>
+<link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Marathi:ital@0;1&family=Baloo+2:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root {
+  --bg: #F7F3EE;
+  --bg2: #EDE8E0;
+  --card: #FFFFFF;
+  --deep: #1A1206;
+  --saffron: #E8640A;
+  --saffron2: #F59324;
+  --saffron-pale: #FEF3E8;
+  --green: #1A7A4A;
+  --green-pale: #E8F5EE;
+  --blue: #1A4FA0;
+  --blue-pale: #E8EEFB;
+  --red: #C0392B;
+  --border: #DDD5C8;
+  --text: #1A1206;
+  --muted: #7A6E62;
+  --shadow: 0 2px 16px rgba(26,18,6,0.08);
+  --shadow-hover: 0 8px 32px rgba(26,18,6,0.15);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Baloo 2', sans-serif;
+  min-height: 100vh;
+}
+
+/* Noise texture overlay */
+body::before {
+  content:''; position:fixed; inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:0; opacity:0.5;
+}
+
+/* ===== HEADER ===== */
+header {
+  position: sticky; top:0; z-index:100;
+  background: var(--deep);
+  padding: 0 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 62px;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+}
+
+.logo-wrap { display:flex; align-items:center; gap:12px; }
+.logo-emblem {
+  width:38px; height:38px;
+  background: linear-gradient(135deg, var(--saffron), var(--saffron2));
+  border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:20px;
+  box-shadow: 0 0 18px rgba(232,100,10,0.5);
+}
+.logo-title { font-size:20px; font-weight:800; color:#fff; letter-spacing:-0.3px; }
+.logo-title span { color: var(--saffron2); }
+
+.breadcrumb {
+  display:flex; align-items:center; gap:8px;
+  font-size:13px; color:rgba(255,255,255,0.5);
+  font-family:'Space Mono',monospace;
+}
+.breadcrumb .crumb {
+  color:rgba(255,255,255,0.7);
+  cursor:pointer; transition:color 0.2s;
+}
+.breadcrumb .crumb:hover { color:var(--saffron2); }
+.breadcrumb .sep { color:rgba(255,255,255,0.25); }
+.breadcrumb .crumb.active { color:var(--saffron2); font-weight:700; }
+
+/* ===== MAIN ===== */
+.main {
+  position:relative; z-index:10;
+  max-width:1100px; margin:0 auto;
+  padding:32px 24px;
+}
+
+/* ===== SCREEN TRANSITIONS ===== */
+.screen { display:none; animation:fadeIn 0.35s ease; }
+.screen.active { display:block; }
+
+@keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+/* ===== SCREEN 1: CLASS SELECT ===== */
+.screen-title {
+  font-size:28px; font-weight:800; margin-bottom:6px;
+  color: var(--deep);
+}
+.screen-title span { color:var(--saffron); }
+.screen-sub { font-size:15px; color:var(--muted); margin-bottom:32px; }
+
+.class-grid {
+  display:grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap:16px;
+  margin-bottom:16px;
+}
+
+@media(max-width:700px) { .class-grid { grid-template-columns: repeat(2,1fr); } }
+
+.class-card {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius:20px;
+  padding:24px 16px;
+  text-align:center;
+  cursor:pointer;
+  transition:all 0.25s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: var(--shadow);
+  position:relative; overflow:hidden;
+}
+
+.class-card::before {
+  content:'';
+  position:absolute; inset:0;
+  background: linear-gradient(135deg, var(--saffron-pale), transparent);
+  opacity:0; transition:opacity 0.25s;
+}
+
+.class-card:hover {
+  border-color: var(--saffron);
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: var(--shadow-hover);
+}
+.class-card:hover::before { opacity:1; }
+
+.class-num {
+  font-size:36px; font-weight:800; color:var(--saffron);
+  display:block; line-height:1; margin-bottom:6px;
+  position:relative; z-index:1;
+}
+.class-label {
+  font-size:13px; font-weight:600; color:var(--muted);
+  position:relative; z-index:1;
+}
+
+/* Primary class (5-10) — bigger */
+.class-card.primary .class-num { font-size:42px; }
+
+/* ===== SCREEN 2: SUBJECTS ===== */
+.back-btn {
+  display:inline-flex; align-items:center; gap:6px;
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius:10px; padding:8px 16px;
+  font-size:13px; font-weight:600; color:var(--muted);
+  cursor:pointer; margin-bottom:24px;
+  transition:all 0.2s; font-family:'Baloo 2',sans-serif;
+}
+.back-btn:hover { border-color:var(--saffron); color:var(--saffron); }
+
+.subject-grid {
+  display:grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px,1fr));
+  gap:16px;
+}
+
+.subject-card {
+  background: var(--card);
+  border: 2px solid var(--border);
+  border-radius:18px;
+  padding:22px 20px;
+  cursor:pointer;
+  transition:all 0.25s cubic-bezier(.34,1.56,.64,1);
+  box-shadow: var(--shadow);
+  display:flex; align-items:center; gap:14px;
+}
+.subject-card:hover {
+  transform:translateY(-4px) scale(1.02);
+  box-shadow: var(--shadow-hover);
+}
+
+.sub-icon {
+  width:48px; height:48px; border-radius:14px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:24px; flex-shrink:0;
+}
+.sub-name { font-size:17px; font-weight:700; }
+.sub-eng { font-size:12px; color:var(--muted); margin-top:2px; }
+
+/* Subject colors */
+.c-orange .sub-icon { background:var(--saffron-pale); }
+.c-green .sub-icon { background:var(--green-pale); }
+.c-blue .sub-icon { background:var(--blue-pale); }
+.c-red .sub-icon { background:#FBE8E8; }
+.c-purple .sub-icon { background:#F0E8FB; }
+.c-teal .sub-icon { background:#E8F5F5; }
+
+.c-orange:hover { border-color:var(--saffron); }
+.c-green:hover { border-color:var(--green); }
+.c-blue:hover { border-color:var(--blue); }
+.c-red:hover { border-color:var(--red); }
+.c-purple:hover { border-color:#8B5CF6; }
+.c-teal:hover { border-color:#0D9488; }
+
+/* ===== SCREEN 3: CHAPTERS ===== */
+.chapter-list { display:flex; flex-direction:column; gap:10px; }
+
+.chapter-item {
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:14px;
+  padding:16px 20px;
+  display:flex; align-items:center; gap:16px;
+  cursor:pointer;
+  transition:all 0.2s;
+  box-shadow: var(--shadow);
+}
+.chapter-item:hover {
+  border-color:var(--saffron);
+  background:var(--saffron-pale);
+  transform:translateX(4px);
+}
+
+.ch-num {
+  width:36px; height:36px;
+  background: linear-gradient(135deg, var(--saffron), var(--saffron2));
+  border-radius:10px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:800; color:white;
+  flex-shrink:0; font-family:'Space Mono',monospace;
+}
+.ch-name { font-size:16px; font-weight:700; }
+.ch-sub { font-size:12px; color:var(--muted); margin-top:2px; }
+.ch-arrow { margin-left:auto; color:var(--muted); font-size:18px; }
+
+/* ===== SCREEN 4: CHAPTER DETAIL ===== */
+.chapter-hero {
+  background: linear-gradient(135deg, var(--deep) 0%, #2D1F0A 100%);
+  border-radius:20px; padding:28px 28px 24px;
+  margin-bottom:24px; color:white;
+  position:relative; overflow:hidden;
+}
+.chapter-hero::after {
+  content:'📘';
+  position:absolute; right:24px; top:50%; transform:translateY(-50%);
+  font-size:72px; opacity:0.1;
+}
+.hero-class { font-size:12px; color:rgba(255,255,255,0.5); font-family:'Space Mono',monospace; letter-spacing:1px; margin-bottom:8px; }
+.hero-chapter { font-size:24px; font-weight:800; margin-bottom:4px; }
+.hero-subject { font-size:14px; color:var(--saffron2); }
+
+/* Action Cards */
+.action-grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px; margin-bottom:24px;
+}
+@media(max-width:500px) { .action-grid { grid-template-columns:1fr; } }
+
+.action-card {
+  background:var(--card);
+  border:2px solid var(--border);
+  border-radius:16px; padding:20px;
+  cursor:pointer; transition:all 0.2s;
+  box-shadow:var(--shadow);
+}
+.action-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-hover); }
+
+.action-card.a-questions:hover { border-color:var(--blue); background:var(--blue-pale); }
+.action-card.a-explain:hover { border-color:var(--green); background:var(--green-pale); }
+.action-card.a-step:hover { border-color:var(--saffron); background:var(--saffron-pale); }
+.action-card.a-analysis:hover { border-color:#8B5CF6; background:#F5F0FF; }
+
+.action-icon { font-size:28px; margin-bottom:10px; display:block; }
+.action-title { font-size:16px; font-weight:800; margin-bottom:4px; }
+.action-desc { font-size:12px; color:var(--muted); line-height:1.5; }
+
+/* Custom Question */
+.custom-q-wrap {
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:16px; padding:20px;
+  box-shadow:var(--shadow);
+}
+.custom-q-label { font-size:13px; font-weight:700; color:var(--muted); margin-bottom:10px; letter-spacing:0.5px; }
+.custom-q-row { display:flex; gap:10px; }
+.custom-q-input {
+  flex:1; background:var(--bg);
+  border:1.5px solid var(--border); border-radius:10px;
+  padding:11px 14px; color:var(--text);
+  font-family:'Baloo 2',sans-serif; font-size:15px; outline:none;
+  transition:border-color 0.2s;
+}
+.custom-q-input:focus { border-color:var(--saffron); }
+.custom-q-input::placeholder { color:#BBB4AB; }
+
+.ask-btn {
+  padding:11px 22px;
+  background:linear-gradient(135deg, var(--saffron), var(--saffron2));
+  border:none; border-radius:10px;
+  color:white; font-weight:700; font-size:15px;
+  cursor:pointer; transition:all 0.2s;
+  font-family:'Baloo 2',sans-serif;
+  box-shadow:0 4px 14px rgba(232,100,10,0.3);
+  white-space:nowrap;
+}
+.ask-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 20px rgba(232,100,10,0.4); }
+.ask-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
+
+/* ===== SCREEN 5: AI ANSWER ===== */
+.answer-header {
+  display:flex; align-items:center; gap:12px; margin-bottom:20px;
+}
+.answer-mode-badge {
+  padding:6px 14px; border-radius:20px;
+  font-size:12px; font-weight:700;
+  font-family:'Space Mono',monospace; letter-spacing:0.5px;
+}
+.badge-blue { background:var(--blue-pale); color:var(--blue); border:1px solid #B8CCEF; }
+.badge-green { background:var(--green-pale); color:var(--green); border:1px solid #B8D9C8; }
+.badge-orange { background:var(--saffron-pale); color:var(--saffron); border:1px solid #F0CCB0; }
+.badge-purple { background:#F0E8FB; color:#7C3AED; border:1px solid #D4B8EF; }
+
+.answer-card {
+  background:var(--card);
+  border:1.5px solid var(--border);
+  border-radius:18px; overflow:hidden;
+  box-shadow:var(--shadow);
+  margin-bottom:16px;
+}
+.answer-top {
+  padding:14px 20px; border-bottom:1px solid var(--border);
+  background:linear-gradient(135deg, #FAFAF8, var(--bg));
+  display:flex; align-items:center; gap:10px;
+}
+.ai-dot {
+  width:10px; height:10px; background:var(--green);
+  border-radius:50%; animation:pulse 2s infinite;
+}
+.answer-body {
+  padding:24px;
+  font-family:'Tiro Devanagari Marathi', serif;
+  font-size:17px; line-height:2;
+  color:var(--text);
+  white-space:pre-wrap;
+  min-height:120px;
+}
+
+.answer-actions {
+  display:flex; gap:8px; flex-wrap:wrap;
+}
+.ans-btn {
+  background:var(--card); border:1.5px solid var(--border);
+  border-radius:8px; padding:8px 16px;
+  font-size:13px; cursor:pointer; transition:all 0.2s;
+  font-family:'Baloo 2',sans-serif; color:var(--muted);
+}
+.ans-btn:hover { border-color:var(--saffron); color:var(--saffron); }
+
+/* Typing */
+.typing { display:flex; gap:5px; align-items:center; padding:8px 0; }
+.typing span {
+  width:8px; height:8px; background:var(--saffron);
+  border-radius:50%; animation:bounce 1.2s infinite;
+}
+.typing span:nth-child(2){animation-delay:.15s}
+.typing span:nth-child(3){animation-delay:.3s}
+
+/* Toast */
+.toast {
+  position:fixed; bottom:24px; right:24px;
+  background:var(--green); color:white;
+  padding:12px 20px; border-radius:10px;
+  font-weight:700; font-size:14px; z-index:999;
+  transform:translateY(80px); opacity:0; transition:all 0.3s;
+  box-shadow:0 4px 20px rgba(0,0,0,0.2);
+}
+.toast.show { transform:translateY(0); opacity:1; }
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+@keyframes bounce { 0%,80%,100%{transform:scale(0.6);opacity:0.5} 40%{transform:scale(1);opacity:1} }
+
+/* ===== HEADER UPLOAD LINK ===== */
+.header-upload-btn {
+  display:flex; align-items:center; gap:6px;
+  background: linear-gradient(135deg, var(--saffron), var(--saffron2));
+  color:#fff; border:none; border-radius:20px;
+  padding:8px 16px; font-size:13px; font-weight:700;
+  cursor:pointer; font-family:'Baloo 2',sans-serif;
+  box-shadow:0 2px 10px rgba(232,100,10,0.35);
+}
+.header-upload-btn .doc-badge {
+  background:rgba(255,255,255,0.25); border-radius:20px;
+  font-size:10.5px; padding:1px 7px;
+}
+
+/* ===== SCREEN: UPLOAD ===== */
+.upload-filter-row { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; }
+.upload-filter-col { flex:1; min-width:150px; }
+.upload-filter-label { font-size:12px; font-weight:700; color:var(--muted); margin-bottom:6px; }
+.upload-select {
+  width:100%; padding:10px 12px; border-radius:10px;
+  border:1.5px solid var(--border); background:var(--card);
+  font-family:'Baloo 2',sans-serif; font-size:14px; color:var(--text);
+}
+
+.dropzone {
+  display:block;
+  border:2px dashed var(--saffron); border-radius:18px;
+  background:var(--saffron-pale); padding:32px 16px; text-align:center;
+  cursor:pointer; transition:.15s; margin-bottom:20px;
+}
+.dropzone.drag { background:#FCE0C4; }
+.dropzone .dz-big { font-size:16px; font-weight:800; color:var(--deep); }
+.dropzone .dz-small { font-size:12px; color:var(--muted); margin-top:6px; }
+
+.proc-card {
+  background:var(--card); border:1.5px solid var(--border); border-radius:14px;
+  padding:14px 16px; margin-bottom:12px; box-shadow:var(--shadow);
+}
+.proc-label { font-size:13px; font-weight:700; margin-bottom:8px; }
+.proc-bar-wrap { height:7px; background:var(--bg2); border-radius:6px; overflow:hidden; }
+.proc-bar { height:100%; width:0%; background:linear-gradient(90deg,var(--saffron),var(--blue)); transition:.2s; }
+
+.doc-card {
+  background:var(--card); border:1.5px solid var(--border); border-radius:14px;
+  padding:14px 16px; margin-bottom:10px; box-shadow:var(--shadow);
+  display:flex; justify-content:space-between; gap:10px; align-items:flex-start;
+}
+.doc-card .dname { font-weight:700; font-size:14px; word-break:break-word; }
+.doc-card .dtags { display:flex; flex-wrap:wrap; gap:6px; margin-top:7px; }
+.doc-card .dtag { font-size:11px; font-weight:700; background:var(--blue-pale); color:var(--blue); padding:3px 9px; border-radius:20px; }
+.doc-card .dmeta { font-size:11.5px; color:var(--muted); margin-top:6px; }
+.doc-del { background:none; border:none; color:var(--red); font-size:17px; cursor:pointer; padding:2px 6px; }
+
+.rag-source-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border); }
+.rag-source-chip { font-size:11px; font-weight:700; background:var(--green-pale); color:var(--green); padding:3px 10px; border-radius:20px; }
+.rag-note { font-size:11.5px; color:var(--muted); margin-top:10px; font-style:italic; }
+
+/* ===== VOICE ===== */
+.mic-btn {
+  width:44px; height:44px; flex-shrink:0;
+  background:var(--card); border:1.5px solid var(--border); border-radius:10px;
+  font-size:18px; cursor:pointer; transition:.2s;
+  display:flex; align-items:center; justify-content:center;
+}
+.mic-btn:hover { border-color:var(--saffron); }
+.mic-btn.listening {
+  background:var(--red); border-color:var(--red); color:#fff;
+  animation:micPulse 1.1s infinite;
+}
+@keyframes micPulse {
+  0%,100% { box-shadow:0 0 0 0 rgba(192,57,43,0.5); }
+  50% { box-shadow:0 0 0 10px rgba(192,57,43,0); }
+}
+.voice-out-btn.speaking { background:var(--green-pale); color:var(--green); border-color:var(--green); }
+.voice-unsupported { font-size:11px; color:var(--muted); margin-top:6px; }
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="loginScreen" style="max-width:380px;margin:60px auto;padding:0 16px;">
+  <div style="text-align:center;margin-bottom:20px;">
+    <div style="font-size:40px;">🏫</div>
+    <div class="logo-title" style="font-size:22px;">शाळा <span>AI</span></div>
+  </div>
+  <div style="background:var(--card);border:1.5px solid var(--border);border-radius:16px;padding:22px;">
+    <div id="loginStepPhone">
+      <div style="font-weight:700;margin-bottom:10px;">📱 मोबाईल नंबरने लॉगिन करा</div>
+      <input type="tel" id="loginPhone" maxlength="10" placeholder="10-अंकी मोबाईल नंबर" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:10px;">
+      <button class="ask-btn" style="width:100%;" onclick="sendOtp()">OTP पाठवा</button>
+      <div id="loginErr1" style="color:var(--red);font-size:12.5px;margin-top:8px;"></div>
+    </div>
+    <div id="loginStepOtp" style="display:none;">
+      <div style="font-weight:700;margin-bottom:10px;">🔑 OTP टाका</div>
+      <div id="otpSentNote" style="font-size:12px;color:var(--muted);margin-bottom:10px;"></div>
+      <input type="tel" id="loginOtp" maxlength="6" placeholder="6-अंकी OTP" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:15px;margin-bottom:10px;">
+      <input type="text" id="loginName" placeholder="तुमचं नाव (पहिल्यांदा लॉगिन करताना)" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:10px;">
+      <input type="text" id="loginSchool" placeholder="शाळेचं नाव (पर्यायी)" style="width:100%;padding:11px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;margin-bottom:10px;">
+      <button class="ask-btn" style="width:100%;" onclick="verifyOtp()">लॉगिन करा</button>
+      <div id="loginErr2" style="color:var(--red);font-size:12.5px;margin-top:8px;"></div>
+      <div style="text-align:center;margin-top:10px;"><a href="#" onclick="backToPhone();return false;" style="font-size:12.5px;color:var(--blue);">← नंबर बदला</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP (hidden until logged in) ===== -->
+<div id="mainApp" style="display:none;">
+  <div class="logo-wrap">
+    <div class="logo-emblem">🏫</div>
+    <div class="logo-title">शाळा <span>AI</span></div>
+  </div>
+  <div class="breadcrumb" id="breadcrumb">
+    <span class="crumb active" onclick="goScreen('class')">मुख्यपृष्ठ</span>
+  </div>
+  <button class="header-upload-btn" id="logoutBtn" onclick="logout()" style="display:none;">🚪 Logout</button>
+</header>
+
+<div class="main">
+
+  <!-- ===== SCREEN 1: CLASS ===== -->
+  <div class="screen active" id="screen-class">
+    <div class="screen-title">इयत्ता <span>निवडा</span></div>
+    <div class="screen-sub">१ ली ते १० वी — तुमची इयत्ता निवडा</div>
+
+    <div class="class-grid">
+      <div class="class-card" onclick="selectClass(1)">
+        <span class="class-num">१</span>
+        <div class="class-label">पहिली</div>
+      </div>
+      <div class="class-card" onclick="selectClass(2)">
+        <span class="class-num">२</span>
+        <div class="class-label">दुसरी</div>
+      </div>
+      <div class="class-card" onclick="selectClass(3)">
+        <span class="class-num">३</span>
+        <div class="class-label">तिसरी</div>
+      </div>
+      <div class="class-card" onclick="selectClass(4)">
+        <span class="class-num">४</span>
+        <div class="class-label">चौथी</div>
+      </div>
+      <div class="class-card" onclick="selectClass(5)">
+        <span class="class-num">५</span>
+        <div class="class-label">पाचवी</div>
+      </div>
+      <div class="class-card primary" onclick="selectClass(6)">
+        <span class="class-num">६</span>
+        <div class="class-label">सहावी</div>
+      </div>
+      <div class="class-card primary" onclick="selectClass(7)">
+        <span class="class-num">७</span>
+        <div class="class-label">सातवी</div>
+      </div>
+      <div class="class-card primary" onclick="selectClass(8)">
+        <span class="class-num">८</span>
+        <div class="class-label">आठवी</div>
+      </div>
+      <div class="class-card primary" onclick="selectClass(9)">
+        <span class="class-num">९</span>
+        <div class="class-label">नववी</div>
+      </div>
+      <div class="class-card primary" onclick="selectClass(10)">
+        <span class="class-num">१०</span>
+        <div class="class-label">दहावी</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 2: SUBJECTS ===== -->
+  <div class="screen" id="screen-subject">
+    <button class="back-btn" onclick="goScreen('class')">← मागे</button>
+    <div class="screen-title" id="subject-title">इयत्ता ६ वी — <span>विषय</span></div>
+    <div class="screen-sub">विषय निवडा</div>
+    <div class="subject-grid" id="subjectGrid"></div>
+  </div>
+
+  <!-- ===== SCREEN 3: CHAPTERS ===== -->
+  <div class="screen" id="screen-chapter">
+    <button class="back-btn" onclick="goScreen('subject')">← मागे</button>
+    <div class="screen-title" id="chapter-title">गणित — <span>धडे</span></div>
+    <div class="screen-sub" id="chapter-sub">धडा निवडा</div>
+    <div class="chapter-list" id="chapterList"></div>
+  </div>
+
+  <!-- ===== SCREEN 4: CHAPTER DETAIL ===== -->
+  <div class="screen" id="screen-detail">
+    <button class="back-btn" onclick="goScreen('chapter')">← मागे</button>
+    <div class="chapter-hero">
+      <div class="hero-class" id="detail-class">इयत्ता ६ वी • गणित</div>
+      <div class="hero-chapter" id="detail-chapter">धडा १: संख्याशास्त्र</div>
+      <div class="hero-subject" id="detail-subject">बालभारती अभ्यासक्रम</div>
+    </div>
+
+    <div class="action-grid">
+      <div class="action-card a-questions" onclick="askAI('questions')">
+        <span class="action-icon">❓</span>
+        <div class="action-title">महत्त्वाचे प्रश्न</div>
+        <div class="action-desc">परीक्षेत येणारे प्रश्न-उत्तरे मराठीत मिळवा</div>
+      </div>
+      <div class="action-card a-explain" onclick="askAI('explain')">
+        <span class="action-icon">💡</span>
+        <div class="action-title">समजावून सांगा</div>
+        <div class="action-desc">उदाहरणांसह संपूर्ण धडा समजून घ्या</div>
+      </div>
+      <div class="action-card a-step" onclick="askAI('step')">
+        <span class="action-icon">🪜</span>
+        <div class="action-title">Step-by-Step</div>
+        <div class="action-desc">प्रत्येक मुद्दा टप्प्याटप्प्याने शिका</div>
+      </div>
+      <div class="action-card a-analysis" onclick="askAI('analysis')">
+        <span class="action-icon">🔍</span>
+        <div class="action-title">विश्लेषण</div>
+        <div class="action-desc">धड्याचे सखोल विश्लेषण व महत्त्व</div>
+      </div>
+    </div>
+
+    <div class="custom-q-wrap">
+      <div class="custom-q-label">✏️ स्वतःचा प्रश्न विचारा</div>
+      <div class="custom-q-row">
+        <input class="custom-q-input" id="customQ" placeholder="उदा. या धड्यातील सूत्र काय आहे?" onkeydown="if(event.key==='Enter')askCustom()"/>
+        <button class="mic-btn" id="micBtn" onclick="toggleVoiceInput()" title="बोलून विचारा">🎤</button>
+        <button class="ask-btn" id="customAskBtn" onclick="askCustom()">विचारा ➤</button>
+      </div>
+      <div class="voice-unsupported" id="voiceUnsupportedNote" style="display:none;">⚠️ या ब्राउझरमध्ये आवाजाने प्रश्न विचारण्याची सुविधा उपलब्ध नाही (Chrome वापरून पहा).</div>
+    </div>
+  </div>
+
+  <!-- ===== SCREEN 5: AI ANSWER ===== -->
+  <div class="screen" id="screen-answer">
+    <button class="back-btn" onclick="goScreen('detail')">← धड्याकडे परत</button>
+
+    <div class="answer-header">
+      <span id="answerBadge" class="answer-mode-badge badge-blue">प्रश्न-उत्तरे</span>
+      <span style="font-size:13px;color:var(--muted)" id="answerContext">इयत्ता ६ वी • गणित • धडा १</span>
+    </div>
+
+    <div class="answer-card">
+      <div class="answer-top">
+        <div class="ai-dot"></div>
+        <span style="font-size:13px;font-weight:700;color:var(--muted)">Claude AI — मराठी उत्तर</span>
+      </div>
+      <div class="answer-body" id="answerBody">
+        <div class="typing"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+
+    <div id="answerSources"></div>
+
+    <div class="answer-actions">
+      <button class="ans-btn voice-out-btn" id="voiceOutBtn" onclick="toggleSpeakAnswer()">🔊 ऐका</button>
+      <select class="upload-select" id="voiceSelect" style="max-width:190px; font-size:12px; padding:8px;" title="आवाज निवडा"></select>
+      <button class="ans-btn" onclick="copyAnswer()">📋 Copy करा</button>
+      <button class="ans-btn" onclick="askAI('questions')">❓ प्रश्न बघा</button>
+      <button class="ans-btn" onclick="askAI('explain')">💡 समजावून सांगा</button>
+      <button class="ans-btn" onclick="askAI('step')">🪜 Step-by-Step</button>
+      <button class="ans-btn" onclick="askAI('analysis')">🔍 विश्लेषण</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">✅ Copied!</div>
+</div><!-- /mainApp -->
+
+<script>
+// ===== DATA =====
+const SUBJECTS = {
+  '1,2,3,4,5': [
+    { id:'marathi', name:'मराठी', eng:'Marathi', icon:'📖', color:'c-orange' },
+    { id:'hindi', name:'हिंदी', eng:'Hindi', icon:'🔤', color:'c-red' },
+    { id:'english', name:'इंग्रजी', eng:'English', icon:'🌍', color:'c-blue' },
+    { id:'maths', name:'गणित', eng:'Mathematics', icon:'🔢', color:'c-orange' },
+    { id:'evs', name:'परिसर अभ्यास', eng:'EVS', icon:'🌿', color:'c-green' },
+  ],
+  '6,7,8': [
+    { id:'marathi', name:'मराठी', eng:'Marathi', icon:'📖', color:'c-orange' },
+    { id:'hindi', name:'हिंदी', eng:'Hindi', icon:'🔤', color:'c-red' },
+    { id:'english', name:'इंग्रजी', eng:'English', icon:'🌍', color:'c-blue' },
+    { id:'maths', name:'गणित', eng:'Mathematics', icon:'🔢', color:'c-orange' },
+    { id:'science', name:'विज्ञान', eng:'Science', icon:'🔬', color:'c-green' },
+    { id:'social', name:'समाजशास्त्र', eng:'Social Science', icon:'🗺️', color:'c-purple' },
+  ],
+  '9,10': [
+    { id:'marathi', name:'मराठी', eng:'Marathi', icon:'📖', color:'c-orange' },
+    { id:'hindi', name:'हिंदी', eng:'Hindi', icon:'🔤', color:'c-red' },
+    { id:'english', name:'इंग्रजी', eng:'English', icon:'🌍', color:'c-blue' },
+    { id:'maths', name:'गणित', eng:'Mathematics', icon:'🔢', color:'c-orange' },
+    { id:'science', name:'विज्ञान', eng:'Science', icon:'🔬', color:'c-green' },
+    { id:'social', name:'इतिहास-भूगोल', eng:'History & Geography', icon:'🗺️', color:'c-purple' },
+    { id:'algebra', name:'बीजगणित', eng:'Algebra', icon:'➗', color:'c-teal' },
+    { id:'geometry', name:'भूमिती', eng:'Geometry', icon:'📐', color:'c-blue' },
+  ]
+};
+
+const CHAPTERS = {
+  maths: {
+    6: ['संख्याज्ञान व दशांश','अपूर्णांक','दशांश अपूर्णांक','पूर्णांक','गुणोत्तर व प्रमाण','क्षेत्रफळ व परिमिती','मूलभूत भूमितीय संकल्पना','सममिती','आलेख','डेटा हाताळणी'],
+    7: ['अपूर्णांकांचे गुणाकार-भागाकार','दशांश संख्या','सरळ व व्यस्त प्रमाण','टक्केवारी','साधे व्याज','बीजगणित','त्रिकोण','वर्तुळ','क्षेत्रफळ','आकडेवारी'],
+    8: ['परिमेय संख्या','वर्गमूळ व घनमूळ','घातांक','बीजगणितीय व्यंजने','रेखीय समीकरण','चतुर्भुज','क्षेत्रफळ','घनफळ','आकडेवारी','संभाव्यता'],
+    9: ['वास्तव संख्या','बहुपदी','रेषीय समीकरणे','युक्लिडची भूमिती','समन्वय भूमिती','त्रिकोण','चतुर्भुज','वर्तुळे','पृष्ठफळ व घनफळ','सांख्यिकी'],
+    10: ['वास्तव संख्या','बहुपदी','रेषीय समीकरणे','द्विघात समीकरण','अंकगणितीय श्रेढी','त्रिकोण','निर्देशांक भूमिती','त्रिकोणमिती','वर्तुळे','पृष्ठफळ-घनफळ'],
+  },
+  science: {
+    6: ['अन्न: आपण काय खातो','अन्नाचे घटक','तंतू ते कापड','वस्तू आपल्या आसपास','पदार्थांचे पृथक्करण','बदल: सजीवांमध्ये','वनस्पतींना जाणून घेऊ','शरीराची हालचाल','सजीव व त्यांचे परिसर','मोजमाप'],
+    7: ['वनस्पतींमध्ये पोषण','प्राण्यांमध्ये पोषण','तंतू ते कापड','उष्णता','आम्ल, आम्लारी व लवण','भौतिक व रासायनिक बदल','हवामान','वारा, वादळे व चक्रीवादळे','माती','जीव कसे श्वसन करतात'],
+    8: ['पिकांचे उत्पादन व व्यवस्थापन','सूक्ष्मजीव','संश्लेषित तंतू','धातू व अधातू','कोळसा व खनिज तेल','ज्वलन व ज्योत','वनस्पती व प्राण्यांचे संरक्षण','पेशी - रचना व कार्य','जीवांचे पुनरुत्पादन','किशोरावस्था'],
+  },
+  marathi: {
+    6: ['माझी आई','शाळेचा पहिला दिवस','नदीचे गाणे','थोर शास्त्रज्ञ','पाऊस आला','छत्रपती शिवाजी महाराज','माझे गाव','जंगलाची गोष्ट','सण आणि उत्सव','माझे स्वप्न'],
+    7: ['स्वातंत्र्याचे महत्त्व','निसर्गाचे सौंदर्य','महान व्यक्तिमत्त्वे','पर्यावरण रक्षण','भारत माझा देश','विज्ञानाची किमया','मित्रत्वाची भावना','कार्याची महती','संत तुकाराम','आदर्श विद्यार्थी'],
+  },
+  social: {
+    6: ['इतिहास जाणून घेऊ','सिंधू संस्कृती','वैदिक काळ','महाजनपदे','मौर्य साम्राज्य','पृथ्वी आपली','ग्लोब व नकाशे','भारताची भूमी','हवामान','नैसर्गिक वनस्पती'],
+    7: ['दिल्ली सल्तनत','मुघल साम्राज्य','मराठा साम्राज्य','ब्रिटिश राज्य','पर्यावरण','मानवी पर्यावरण','संसाधने','शेती','उद्योग','मानव व पर्यावरण'],
+  }
+};
+
+// Default chapters for missing combos
+function getChapters(subjectId, classNum) {
+  if (CHAPTERS[subjectId] && CHAPTERS[subjectId][classNum]) return CHAPTERS[subjectId][classNum];
+  // Generic fallback
+  return Array.from({length:10}, (_,i) => `धडा ${i+1}: ${subjectId} - विषय ${i+1}`);
+}
+
+function getSubjects(classNum) {
+  if (classNum <= 5) return SUBJECTS['1,2,3,4,5'];
+  if (classNum <= 8) return SUBJECTS['6,7,8'];
+  return SUBJECTS['9,10'];
+}
+
+// ===== STATE =====
+let state = { class: null, subject: null, chapter: null, mode: null };
+
+// ===== BACKEND CONFIG =====
+// Set this to your deployed backend URL (see DEPLOY.md).
+// Example after deploying on Render: "https://shala-ai-backend.onrender.com"
+const BACKEND_URL = "http://localhost:3000"; // <-- CHANGE THIS before real use
+
+// ===== AUTH (phone + OTP login) =====
+// Note: session token is kept in memory only (not localStorage) — it resets
+// on page reload. That's a deliberate limitation of this preview build; once
+// you self-host this permanently, switch authToken storage to localStorage
+// so logins persist across visits (a one-line change, ask if you want it).
+let authToken = null;
+let currentUser = null;
+
+function showLogin() {
+  document.getElementById('loginScreen').style.display = 'block';
+  document.getElementById('mainApp').style.display = 'none';
+}
+function showApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('mainApp').style.display = 'block';
+  document.getElementById('logoutBtn').style.display = 'inline-flex';
+}
+function logout() {
+  authToken = null;
+  currentUser = null;
+  document.getElementById('loginPhone').value = '';
+  document.getElementById('loginOtp').value = '';
+  backToPhone();
+  showLogin();
+}
+function backToPhone() {
+  document.getElementById('loginStepOtp').style.display = 'none';
+  document.getElementById('loginStepPhone').style.display = 'block';
+  document.getElementById('loginErr1').textContent = '';
+  document.getElementById('loginErr2').textContent = '';
+}
+
+async function sendOtp() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const errEl = document.getElementById('loginErr1');
+  errEl.textContent = '';
+  if (!/^[6-9]\d{9}$/.test(phone)) {
+    errEl.textContent = 'कृपया वैध १०-अंकी मोबाईल नंबर टाका.';
+    return;
+  }
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/auth/send-otp`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'OTP पाठवता आले नाही.');
+    document.getElementById('loginStepPhone').style.display = 'none';
+    document.getElementById('loginStepOtp').style.display = 'block';
+    document.getElementById('otpSentNote').textContent = `OTP ${phone} वर पाठवला आहे.` + (data.devOtp ? ` (टेस्ट मोड — OTP: ${data.devOtp})` : '');
+  } catch (e) {
+    errEl.textContent = e.message + ' — बॅकएंड सर्व्हर चालू आहे का व BACKEND_URL बरोबर आहे का तपासा.';
+  }
+}
+
+async function verifyOtp() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const otp = document.getElementById('loginOtp').value.trim();
+  const name = document.getElementById('loginName').value.trim();
+  const school = document.getElementById('loginSchool').value.trim();
+  const errEl = document.getElementById('loginErr2');
+  errEl.textContent = '';
+  if (!/^\d{6}$/.test(otp)) {
+    errEl.textContent = 'कृपया ६-अंकी OTP टाका.';
+    return;
+  }
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/auth/verify-otp`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp, name, school })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'लॉगिन अयशस्वी.');
+    authToken = data.token;
+    currentUser = data.user;
+    if (!data.hasAccess) {
+      errEl.textContent = data.user.status === 'inactive'
+        ? 'तुमचं खातं निष्क्रिय केलेलं आहे. कृपया E Learn Solutions शी संपर्क साधा.'
+        : 'तुमचा demo कालावधी संपला आहे. सुरू ठेवण्यासाठी संपर्क साधा.';
+      return;
+    }
+    showApp();
+  } catch (e) {
+    errEl.textContent = e.message;
+  }
+}
+
+showLogin();
+
+const SUBJECT_TAG_MAP = { maths: 'Mathematics', algebra: 'Mathematics', geometry: 'Mathematics', science: 'Science', marathi: 'Marathi', hindi: 'Hindi', english: 'English', social: 'History' };
+
+// ===== NAVIGATION =====
+function goScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  updateBreadcrumb(name);
+  window.scrollTo(0, 0);
+}
+
+function updateBreadcrumb(screen) {
+  const bc = document.getElementById('breadcrumb');
+  let html = `<span class="crumb" onclick="goScreen('class')">मुख्यपृष्ठ</span>`;
+  if (screen !== 'class' && state.class) {
+    html += `<span class="sep">›</span><span class="crumb" onclick="goScreen('subject')">${state.class}वी</span>`;
+  }
+  if ((screen === 'chapter' || screen === 'detail' || screen === 'answer') && state.subject) {
+    html += `<span class="sep">›</span><span class="crumb" onclick="goScreen('chapter')">${state.subject.name}</span>`;
+  }
+  if ((screen === 'detail' || screen === 'answer') && state.chapter) {
+    html += `<span class="sep">›</span><span class="crumb active">धडा</span>`;
+  }
+  bc.innerHTML = html;
+}
+
+// ===== CLASS SELECT =====
+function selectClass(num) {
+  state.class = num;
+  document.getElementById('subject-title').innerHTML = `इयत्ता ${num} वी — <span>विषय निवडा</span>`;
+  renderSubjects(num);
+  goScreen('subject');
+}
+
+// ===== SUBJECTS =====
+function renderSubjects(classNum) {
+  const subjects = getSubjects(classNum);
+  const grid = document.getElementById('subjectGrid');
+  grid.innerHTML = subjects.map(s => `
+    <div class="subject-card ${s.color}" onclick="selectSubject('${s.id}','${s.name}','${s.icon}')">
+      <div class="sub-icon">${s.icon}</div>
+      <div>
+        <div class="sub-name">${s.name}</div>
+        <div class="sub-eng">${s.eng}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function selectSubject(id, name, icon) {
+  state.subject = { id, name, icon };
+  document.getElementById('chapter-title').innerHTML = `${icon} ${name} — <span>धडे</span>`;
+  document.getElementById('chapter-sub').textContent = `इयत्ता ${state.class} वी • ${name}`;
+  renderChapters(id, state.class);
+  goScreen('chapter');
+}
+
+// ===== CHAPTERS =====
+function renderChapters(subjectId, classNum) {
+  const chapters = getChapters(subjectId, classNum);
+  const list = document.getElementById('chapterList');
+  const numerals = ['०','१','२','३','४','५','६','७','८','९','१०'];
+  list.innerHTML = chapters.map((ch, i) => `
+    <div class="chapter-item" onclick="selectChapter('${ch}', ${i+1})">
+      <div class="ch-num">${i+1}</div>
+      <div>
+        <div class="ch-name">${ch}</div>
+        <div class="ch-sub">इयत्ता ${state.class} वी • ${state.subject.name}</div>
+      </div>
+      <div class="ch-arrow">›</div>
+    </div>
+  `).join('');
+}
+
+function selectChapter(name, num) {
+  state.chapter = { name, num };
+  document.getElementById('detail-class').textContent = `इयत्ता ${state.class} वी • ${state.subject.name}`;
+  document.getElementById('detail-chapter').textContent = `धडा ${num}: ${name}`;
+  document.getElementById('detail-subject').textContent = 'बालभारती / महाराष्ट्र राज्य अभ्यासक्रम';
+  goScreen('detail');
+}
+
+// ===== AI INTERACTION =====
+const MODE_QUERY_BIAS = {
+  questions: 'स्वाध्याय सराव प्रश्न उदाहरणे',
+  explain: '',
+  step: 'उदाहरण सोडवा कृती पद्धत',
+  analysis: '',
+  custom: ''
+};
+
+const MODES = {
+  questions: {
+    label:'❓ महत्त्वाचे प्रश्न-उत्तरे',
+    badge:'badge-blue',
+    prompt: (cls, sub, ch) => `तुम्ही महाराष्ट्र राज्य अभ्यासक्रमातील (बालभारती) तज्ञ शिक्षक आहात.
+इयत्ता ${cls} वी च्या ${sub} विषयातील "${ch}" या धड्यावर परीक्षेत येणारे महत्त्वाचे प्रश्न-उत्तरे मराठीत लिहा.
+किमान ५-६ प्रश्न द्या — एक-वाक्य उत्तर, लघुउत्तर आणि दीर्घउत्तर असे वर्गीकरण करा.`
+  },
+  explain: {
+    label:'💡 समजावून सांगणे',
+    badge:'badge-green',
+    prompt: (cls, sub, ch) => `तुम्ही महाराष्ट्र राज्य अभ्यासक्रमातील तज्ञ शिक्षक आहात.
+इयत्ता ${cls} वी च्या ${sub} विषयातील "${ch}" हा धडा विद्यार्थ्याला उदाहरणांसह, सोप्या मराठी भाषेत सविस्तर समजावून सांगा.
+मुख्य संकल्पना, उदाहरणे आणि महत्त्वाचे मुद्दे यांचा समावेश करा.`
+  },
+  step: {
+    label:'🪜 Step-by-Step शिक्षण',
+    badge:'badge-orange',
+    prompt: (cls, sub, ch) => `तुम्ही महाराष्ट्र राज्य अभ्यासक्रमातील तज्ञ शिक्षक आहात.
+इयत्ता ${cls} वी च्या ${sub} विषयातील "${ch}" हा धडा टप्प्याटप्प्याने (Step by Step) शिकवा.
+प्रत्येक टप्पा स्पष्ट करा, उदाहरणे द्या आणि विद्यार्थ्याला सहज समजेल अशा पद्धतीने मराठीत सांगा.`
+  },
+  analysis: {
+    label:'🔍 सखोल विश्लेषण',
+    badge:'badge-purple',
+    prompt: (cls, sub, ch) => `तुम्ही महाराष्ट्र राज्य अभ्यासक्रमातील तज्ञ शिक्षक आहात.
+इयत्ता ${cls} वी च्या ${sub} विषयातील "${ch}" या धड्याचे सखोल विश्लेषण मराठीत करा.
+धड्याचे महत्त्व, मुख्य संकल्पना, वास्तविक जीवनाशी संबंध, आणि परीक्षेच्या दृष्टिकोनातून महत्त्वाचे मुद्दे यांचा समावेश करा.`
+  }
+};
+
+let lastAnswer = '';
+
+let lastSources = [];
+
+async function askAI(mode, customQuestion = null) {
+  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  speaking = false;
+  const m = MODES[mode];
+  const cls = state.class;
+  const sub = state.subject.name;
+  const ch = state.chapter.name;
+
+  // Setup answer screen
+  document.getElementById('answerBadge').textContent = m.label;
+  document.getElementById('answerBadge').className = `answer-mode-badge ${m.badge}`;
+  document.getElementById('answerContext').textContent = `इयत्ता ${cls} वी • ${sub} • ${ch}`;
+  document.getElementById('answerBody').innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  document.getElementById('answerSources').innerHTML = '';
+
+  goScreen('answer');
+
+  const basePrompt = customQuestion
+    ? `"${ch}" या धड्याच्या संदर्भात खालील प्रश्नाचे उत्तर मराठीत द्या:\n\n${customQuestion}`
+    : m.prompt(cls, sub, ch);
+  const question = customQuestion || `${ch} — ${MODE_QUERY_BIAS[mode] || m.label}`;
+  const subjectTag = SUBJECT_TAG_MAP[state.subject.id] || state.subject.id;
+
+  const body = document.getElementById('answerBody');
+
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/ask`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+      body: JSON.stringify({
+        classNum: cls,
+        subject: subjectTag,
+        medium: 'Marathi',
+        question,
+        systemHint: basePrompt
+      })
+    });
+    const data = await res.json();
+    if (res.status === 401) {
+      // session expired — send back to login
+      logout();
+      document.getElementById('loginErr1').textContent = 'तुमचं सत्र कालबाह्य झालं आहे, कृपया पुन्हा लॉगिन करा.';
+      return;
+    }
+    if (res.status === 403 && data.accessDenied) {
+      logout();
+      document.getElementById('loginErr1').textContent = data.error;
+      return;
+    }
+    if (!res.ok) throw new Error(data.error || 'उत्तर मिळाले नाही.');
+    lastAnswer = data.answer || 'उत्तर मिळाले नाही.';
+    lastSources = (data.sources || []).map(s => ({ docName: s.docName, pageInfo: '' }));
+  } catch (err) {
+    lastAnswer = `❌ बॅकएंड सर्व्हरशी संपर्क होत नाही: ${err.message}\n\nBACKEND_URL बरोबर सेट आहे का व सर्व्हर चालू आहे का तपासा (DEPLOY.md पाहा).`;
+    lastSources = [];
+  }
+
+  // Typewriter
+  body.innerHTML = '';
+  let i = 0;
+  function type() {
+    if (i < lastAnswer.length) {
+      body.textContent = lastAnswer.slice(0, i + 3);
+      i += 3;
+      setTimeout(type, 10);
+    } else {
+      body.textContent = lastAnswer;
+      renderSources();
+    }
+  }
+  type();
+}
+
+function renderSources() {
+  const el = document.getElementById('answerSources');
+  if (!el) return;
+  if (lastSources.length) {
+    el.innerHTML = `<div class="rag-source-row">${lastSources.map(c => `<span class="rag-source-chip">📘 ${c.docName} · ${c.pageInfo}</span>`).join('')}</div>`;
+  } else {
+    el.innerHTML = `<div class="rag-note">या इयत्ता/विषयासाठी कोणतेही दस्तऐवज अपलोड केलेले नाही — उत्तर सामान्य AI ज्ञानावर आधारित आहे.</div>`;
+  }
+}
+
+function askCustom() {
+  const q = document.getElementById('customQ').value.trim();
+  if (!q) return;
+  document.getElementById('customQ').value = '';
+  askAI('custom', q);
+}
+MODES.custom = {
+  label: '✏️ तुमचा प्रश्न',
+  badge: 'badge-orange',
+  prompt: (cls, sub, ch) => '' // unused when customQuestion is passed
+};
+
+function copyAnswer() {
+  if (!lastAnswer) return;
+  navigator.clipboard.writeText(lastAnswer).then(() => {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2000);
+  });
+}
+
+// ===== VOICE INPUT (speech-to-text) =====
+const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizer = null;
+let listening = false;
+
+function toggleVoiceInput() {
+  const micBtn = document.getElementById('micBtn');
+  const note = document.getElementById('voiceUnsupportedNote');
+
+  if (!SpeechRecognitionAPI) {
+    note.style.display = 'block';
+    return;
+  }
+  note.style.display = 'none';
+
+  if (listening) {
+    recognizer.stop();
+    return;
+  }
+
+  recognizer = new SpeechRecognitionAPI();
+  recognizer.lang = 'mr-IN';
+  recognizer.interimResults = true;
+  recognizer.maxAlternatives = 1;
+
+  const input = document.getElementById('customQ');
+
+  recognizer.onstart = () => {
+    listening = true;
+    micBtn.classList.add('listening');
+    micBtn.textContent = '⏹️';
+  };
+  recognizer.onresult = (e) => {
+    let transcript = '';
+    for (let i = 0; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    input.value = transcript;
+  };
+  recognizer.onerror = (e) => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      note.textContent = '⚠️ मायक्रोफोनसाठी परवानगी द्या आणि पुन्हा प्रयत्न करा.';
+      note.style.display = 'block';
+    }
+  };
+  recognizer.onend = () => {
+    listening = false;
+    micBtn.classList.remove('listening');
+    micBtn.textContent = '🎤';
+  };
+
+  recognizer.start();
+}
+
+// ===== VOICE OUTPUT (text-to-speech) =====
+let speaking = false;
+
+function populateVoiceSelect() {
+  const sel = document.getElementById('voiceSelect');
+  if (!sel || !('speechSynthesis' in window)) return;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return; // list loads async in some browsers, retried via onvoiceschanged
+
+  const marathi = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('mr'));
+  const hindi = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('hi'));
+  const others = voices.filter(v => !marathi.includes(v) && !hindi.includes(v));
+  const ordered = [...marathi, ...hindi, ...others];
+
+  const prevChoice = sel.value;
+  sel.innerHTML = '';
+  ordered.forEach((v, i) => {
+    const opt = document.createElement('option');
+    opt.value = v.name;
+    const tag = v.lang.toLowerCase().startsWith('mr') ? '🟢 मराठी — ' : v.lang.toLowerCase().startsWith('hi') ? '🟡 हिंदी — ' : '⚪ ';
+    opt.textContent = tag + v.name;
+    sel.appendChild(opt);
+  });
+  if (prevChoice && ordered.some(v => v.name === prevChoice)) sel.value = prevChoice;
+
+  if (marathi.length === 0) {
+    const warn = document.createElement('option');
+    warn.disabled = true;
+    warn.textContent = '⚠️ डिव्हाइसवर शुद्ध मराठी आवाज सापडला नाही';
+    sel.insertBefore(warn, sel.firstChild);
+  }
+}
+
+function getSelectedVoice() {
+  const sel = document.getElementById('voiceSelect');
+  const voices = window.speechSynthesis.getVoices();
+  return voices.find(v => v.name === (sel && sel.value)) || voices[0] || null;
+}
+
+function toggleSpeakAnswer() {
+  const btn = document.getElementById('voiceOutBtn');
+  if (!('speechSynthesis' in window)) {
+    btn.title = 'या ब्राउझरमध्ये उत्तर ऐकण्याची सुविधा उपलब्ध नाही.';
+    btn.textContent = '🔇 उपलब्ध नाही';
+    return;
+  }
+  if (speaking) {
+    window.speechSynthesis.cancel();
+    speaking = false;
+    btn.classList.remove('speaking');
+    btn.textContent = '🔊 ऐका';
+    return;
+  }
+  if (!lastAnswer) return;
+
+  const utter = new SpeechSynthesisUtterance(lastAnswer);
+  const voice = getSelectedVoice();
+  if (voice) utter.voice = voice;
+  utter.lang = voice ? voice.lang : 'mr-IN';
+  utter.rate = 0.95;
+
+  utter.onstart = () => { speaking = true; btn.classList.add('speaking'); btn.textContent = '⏸️ थांबवा'; };
+  utter.onend = () => { speaking = false; btn.classList.remove('speaking'); btn.textContent = '🔊 ऐका'; };
+  utter.onerror = () => { speaking = false; btn.classList.remove('speaking'); btn.textContent = '🔊 ऐका'; };
+
+  window.speechSynthesis.cancel(); // stop anything queued
+  window.speechSynthesis.speak(utter);
+}
+// Some browsers load voice list asynchronously — warm it up.
+if ('speechSynthesis' in window) {
+  window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); populateVoiceSelect(); };
+  populateVoiceSelect();
+}
+</script>
+</body>
+</html>
