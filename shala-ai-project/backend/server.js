@@ -53,7 +53,15 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 
 
 // ---- Helpers ----
 function readIndex() {
-  return JSON.parse(fs.readFileSync(INDEX_FILE, 'utf-8'));
+  function readIndex() {
+  try {
+    const raw = fs.readFileSync(INDEX_FILE, 'utf-8').trim();
+    if (!raw) throw new Error('empty');
+    return JSON.parse(raw);
+  } catch (e) {
+    fs.writeFileSync(INDEX_FILE, '[]');
+    return [];
+  }
 }
 function writeIndex(idx) {
   fs.writeFileSync(INDEX_FILE, JSON.stringify(idx, null, 2));
