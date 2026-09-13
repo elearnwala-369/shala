@@ -8,11 +8,12 @@
     "dev": "node --watch server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
+    "@anthropic-ai/sdk": "^0.32.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
-    "@anthropic-ai/sdk": "^0.32.1",
+    "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
+    "mongodb": "^7.6.0",
     "multer": "^2.0.1",
     "pdf-parse": "^1.1.1"
   },
