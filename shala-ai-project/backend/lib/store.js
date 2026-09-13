@@ -1,44 +1,22 @@
 /**
- * lib/store.js — minimal JSON-file persistence for users & offers.
+ * lib/store.js — users & offers, backed by MongoDB (see lib/db.js).
  *
- * This is intentionally simple (no external database) to match the rest of
- * this MVP backend. See NOTES.md — once you have real signups, migrate this
- * to Postgres/SQLite so data survives redeploys on platforms without a
- * persistent disk (e.g. Render free tier).
+ * Every function here is now async (it wasn't before, when it read local
+ * JSON files) — callers must await these.
  */
-const fs = require('fs');
-const path = require('path');
-
-const DATA_DIR = path.join(__dirname, '..', 'data');
-const USERS_FILE = path.join(DATA_DIR, 'users.json');
-const OFFERS_FILE = path.join(DATA_DIR, 'offers.json');
-
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-if (!fs.existsSync(USERS_FILE)) fs.writeFileSync(USERS_FILE, '[]');
-if (!fs.existsSync(OFFERS_FILE)) fs.writeFileSync(OFFERS_FILE, '[]');
-
-function readJSON(file) {
-  return JSON.parse(fs.readFileSync(file, 'utf-8'));
-}
-function writeJSON(file, data) {
-  fs.writeFileSync(file, JSON.stringify(data, null, 2));
-}
+const { getDB } = require('./db');
 
 // ---- Users ----
-function getUsers() {
-  return readJSON(USERS_FILE);
+async function getUsers() {
+  return getDB().collection('users').find({}).toArray();
 }
-function saveUsers(users) {
-  writeJSON(USERS_FILE, users);
+async function findUserByPhone(phone) {
+  return getDB().collection('users').findOne({ phone });
 }
-function findUserByPhone(phone) {
-  return getUsers().find(u => u.phone === phone);
+async function findUserById(id) {
+  return getDB().collection('users').findOne({ id });
 }
-function findUserById(id) {
-  return getUsers().find(u => u.id === id);
-}
-function createUser({ phone, name = '', school = '' }) {
-  const users = getUsers();
+async function createUser({ phone, name = '', school = '' }) {
   const now = new Date();
   const demoExpires = new Date(now);
   demoExpires.setDate(demoExpires.getDate() + 7); // 7-day free demo by default
@@ -55,19 +33,18 @@ function createUser({ phone, name = '', school = '' }) {
     createdAt: now.toISOString(),
     lastLoginAt: now.toISOString()
   };
-  users.push(user);
-  saveUsers(users);
+  await getDB().collection('users').insertOne(user);
   return user;
 }
-function updateUser(id, patch) {
-  const users = getUsers();
-  const idx = users.findIndex(u => u.id === id);
-  if (idx === -1) return null;
-  users[idx] = { ...users[idx], ...patch };
-  saveUsers(users);
-  return users[idx];
+async function updateUser(id, patch) {
+  const result = await getDB().collection('users').findOneAndUpdate(
+    { id },
+    { $set: patch },
+    { returnDocument: 'after' }
+  );
+  return result && result.value ? result.value : result; // driver-version-safe
 }
-function touchLogin(id) {
+async function touchLogin(id) {
   return updateUser(id, { lastLoginAt: new Date().toISOString() });
 }
 
@@ -86,14 +63,10 @@ function userHasAccess(user) {
 }
 
 // ---- Offers ----
-function getOffers() {
-  return readJSON(OFFERS_FILE);
+async function getOffers() {
+  return getDB().collection('offers').find({}).toArray();
 }
-function saveOffers(offers) {
-  writeJSON(OFFERS_FILE, offers);
-}
-function createOffer({ code, description, discountPercent, expiresAt }) {
-  const offers = getOffers();
+async function createOffer({ code, description, discountPercent, expiresAt }) {
   const offer = {
     id: 'offer_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
     code: code.toUpperCase(),
@@ -103,24 +76,22 @@ function createOffer({ code, description, discountPercent, expiresAt }) {
     active: true,
     createdAt: new Date().toISOString()
   };
-  offers.push(offer);
-  saveOffers(offers);
+  await getDB().collection('offers').insertOne(offer);
   return offer;
 }
-function deleteOffer(id) {
-  const offers = getOffers().filter(o => o.id !== id);
-  saveOffers(offers);
+async function deleteOffer(id) {
+  await getDB().collection('offers').deleteOne({ id });
 }
-function setOfferActive(id, active) {
-  const offers = getOffers();
-  const idx = offers.findIndex(o => o.id === id);
-  if (idx === -1) return null;
-  offers[idx].active = active;
-  saveOffers(offers);
-  return offers[idx];
+async function setOfferActive(id, active) {
+  const result = await getDB().collection('offers').findOneAndUpdate(
+    { id },
+    { $set: { active } },
+    { returnDocument: 'after' }
+  );
+  return result && result.value ? result.value : result;
 }
 
 module.exports = {
-  getUsers, saveUsers, findUserByPhone, findUserById, createUser, updateUser, touchLogin, userHasAccess,
-  getOffers, saveOffers, createOffer, deleteOffer, setOfferActive
+  getUsers, findUserByPhone, findUserById, createUser, updateUser, touchLogin, userHasAccess,
+  getOffers, createOffer, deleteOffer, setOfferActive
 };
