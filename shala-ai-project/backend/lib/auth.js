@@ -1,48 +1,69 @@
-/**
- * lib/auth.js — JWT session tokens for two audiences: regular users
- * (phone/OTP login) and the admin panel (username/password login).
- */
-const jwt = require('jsonwebtoken');
+const express = require('express');
+const router = express.Router();
+const store = require('../lib/store');
+const otp = require('../lib/otp');
+const sms = require('../lib/sms');
+const { signUserToken, signAdminToken, requireAuth } = require('../lib/auth');
 
-const SECRET = process.env.JWT_SECRET || 'dev-secret-CHANGE-THIS-in-production';
-const USER_TOKEN_TTL = '30d';
-const ADMIN_TOKEN_TTL = '12h';
+const PHONE_RE = /^[6-9]\d{9}$/; // Indian 10-digit mobile numbers
 
-function signUserToken(user) {
-  return jwt.sign({ type: 'user', id: user.id, phone: user.phone }, SECRET, { expiresIn: USER_TOKEN_TTL });
-}
-function signAdminToken() {
-  return jwt.sign({ type: 'admin' }, SECRET, { expiresIn: ADMIN_TOKEN_TTL });
-}
-
-function getBearerToken(req) {
-  const h = req.headers.authorization || '';
-  return h.startsWith('Bearer ') ? h.slice(7) : null;
-}
-
-function requireAuth(req, res, next) {
-  const token = getBearerToken(req);
-  if (!token) return res.status(401).json({ error: 'लॉगिन आवश्यक आहे.' });
-  try {
-    const payload = jwt.verify(token, SECRET);
-    if (payload.type !== 'user') throw new Error('wrong token type');
-    req.userId = payload.id;
-    next();
-  } catch (e) {
-    return res.status(401).json({ error: 'सत्र कालबाह्य झाले आहे, पुन्हा लॉगिन करा.' });
+// ---- User OTP login ----
+router.post('/send-otp', async (req, res) => {
+  const { phone } = req.body;
+  if (!phone || !PHONE_RE.test(phone)) {
+    return res.status(400).json({ error: 'वैध १०-अंकी मोबाईल नंबर टाका.' });
   }
-}
-
-function requireAdmin(req, res, next) {
-  const token = getBearerToken(req);
-  if (!token) return res.status(401).json({ error: 'Admin login आवश्यक आहे.' });
+  const code = otp.generateOTP(phone);
   try {
-    const payload = jwt.verify(token, SECRET);
-    if (payload.type !== 'admin') throw new Error('wrong token type');
-    next();
+    await sms.sendOTP(phone, code);
   } catch (e) {
-    return res.status(401).json({ error: 'Admin सत्र कालबाह्य झाले आहे.' });
+    return res.status(500).json({ error: 'OTP पाठवता आले नाही: ' + e.message });
   }
-}
+  const devMode = process.env.NODE_ENV !== 'production' || process.env.DEV_OTP_VISIBLE === 'true';
+  res.json({ ok: true, ...(devMode ? { devOtp: code } : {}) });
+});
 
-module.exports = { signUserToken, signAdminToken, requireAuth, requireAdmin };
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { phone, otp: submitted, name, school } = req.body;
+    if (!phone || !submitted) return res.status(400).json({ error: 'phone आणि otp आवश्यक आहेत.' });
+
+    const result = otp.verifyOTP(phone, submitted);
+    if (!result.ok) return res.status(400).json({ error: result.error });
+
+    let user = await store.findUserByPhone(phone);
+    if (!user) {
+      user = await store.createUser({ phone, name: name || '', school: school || '' });
+    } else {
+      user = await store.touchLogin(user.id);
+    }
+
+    const token = signUserToken(user);
+    res.json({ ok: true, token, user, hasAccess: store.userHasAccess(user) });
+  } catch (err) {
+    res.status(500).json({ error: 'लॉगिन करताना चूक झाली: ' + err.message });
+  }
+});
+
+router.get('/me', requireAuth, async (req, res) => {
+  try {
+    const user = await store.findUserById(req.userId);
+    if (!user) return res.status(404).json({ error: 'वापरकर्ता सापडला नाही.' });
+    res.json({ user, hasAccess: store.userHasAccess(user) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ---- Admin login ----
+router.post('/admin-login', (req, res) => {
+  const { username, password } = req.body;
+  const okUser = username === process.env.ADMIN_USERNAME;
+  const okPass = password === process.env.ADMIN_PASSWORD;
+  if (!okUser || !okPass) {
+    return res.status(401).json({ error: 'चुकीचा username किंवा password.' });
+  }
+  res.json({ ok: true, token: signAdminToken() });
+});
+
+module.exports = router;
