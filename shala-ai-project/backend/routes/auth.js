@@ -23,28 +23,48 @@ router.post('/send-otp', async (req, res) => {
   res.json({ ok: true, ...(devMode ? { devOtp: code } : {}) });
 });
 
-router.post('/verify-otp', (req, res) => {
-  const { phone, otp: submitted, name, school } = req.body;
-  if (!phone || !submitted) return res.status(400).json({ error: 'phone आणि otp आवश्यक आहेत.' });
+router.post('/verify-otp', async (req, res) => {
+  console.log('[verify-otp] request received:', JSON.stringify(req.body));
+  try {
+    const { phone, otp: submitted, name, school } = req.body;
+    if (!phone || !submitted) {
+      console.log('[verify-otp] missing phone or otp');
+      return res.status(400).json({ error: 'phone आणि otp आवश्यक आहेत.' });
+    }
 
-  const result = otp.verifyOTP(phone, submitted);
-  if (!result.ok) return res.status(400).json({ error: result.error });
+    const result = otp.verifyOTP(phone, submitted);
+    console.log('[verify-otp] otp.verifyOTP result:', JSON.stringify(result));
+    if (!result.ok) return res.status(400).json({ error: result.error });
 
-  let user = store.findUserByPhone(phone);
-  if (!user) {
-    user = store.createUser({ phone, name: name || '', school: school || '' });
-  } else {
-    user = store.touchLogin(user.id);
+    let user = await store.findUserByPhone(phone);
+    console.log('[verify-otp] existing user found?', !!user);
+    if (!user) {
+      user = await store.createUser({ phone, name: name || '', school: school || '' });
+      console.log('[verify-otp] created new user:', JSON.stringify(user));
+    } else {
+      user = await store.touchLogin(user.id);
+      console.log('[verify-otp] touched login for existing user:', JSON.stringify(user));
+    }
+
+    const access = store.userHasAccess(user);
+    console.log('[verify-otp] hasAccess:', access, 'user.status:', user && user.status, 'demoExpiresAt:', user && user.demoExpiresAt);
+
+    const token = signUserToken(user);
+    res.json({ ok: true, token, user, hasAccess: access });
+  } catch (err) {
+    console.error('[verify-otp] ERROR:', err);
+    res.status(500).json({ error: 'लॉगिन करताना चूक झाली: ' + err.message });
   }
-
-  const token = signUserToken(user);
-  res.json({ ok: true, token, user, hasAccess: store.userHasAccess(user) });
 });
 
-router.get('/me', requireAuth, (req, res) => {
-  const user = store.findUserById(req.userId);
-  if (!user) return res.status(404).json({ error: 'वापरकर्ता सापडला नाही.' });
-  res.json({ user, hasAccess: store.userHasAccess(user) });
+router.get('/me', requireAuth, async (req, res) => {
+  try {
+    const user = await store.findUserById(req.userId);
+    if (!user) return res.status(404).json({ error: 'वापरकर्ता सापडला नाही.' });
+    res.json({ user, hasAccess: store.userHasAccess(user) });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ---- Admin login ----
