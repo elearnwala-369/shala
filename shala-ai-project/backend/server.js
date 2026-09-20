@@ -104,11 +104,20 @@ function scoreChunk(qTokens, text) {
   return score;
 }
 
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+// Case-insensitive exact match — so "Science", "science", "SCIENCE" (however
+// an admin typed the subject at upload time) all match each other.
+function ciMatch(str) {
+  return new RegExp('^' + escapeRegExp(str) + '$', 'i');
+}
+
 // Documents are stored in MongoDB as { id, name, classNum, medium, subject,
 // pages, chunkCount, uploadedAt, chunks: [{text, chapterTitle}, ...] }.
 async function retrieveChunks({ classNum, subject, medium, query, k = 5 }) {
-  const filter = { classNum: String(classNum), subject };
-  if (medium) filter.medium = medium;
+  const filter = { classNum: String(classNum), subject: ciMatch(subject) };
+  if (medium) filter.medium = ciMatch(medium);
   const candidates = await getDB().collection('documents').find(filter).toArray();
 
   const qTokens = tokenize(query);
@@ -150,8 +159,8 @@ app.get('/api/chapters', async (req, res) => {
     if (!classNum || !subject) {
       return res.status(400).json({ error: 'classNum आणि subject आवश्यक आहेत.' });
     }
-    const filter = { classNum: String(classNum), subject };
-    if (medium) filter.medium = medium;
+    const filter = { classNum: String(classNum), subject: ciMatch(subject) };
+    if (medium) filter.medium = ciMatch(medium);
     const docs = await getDB().collection('documents')
       .find(filter, { projection: { chunks: 1, name: 1 } })
       .toArray();
@@ -187,7 +196,9 @@ app.post('/api/documents/upload', requireAdmin, upload.single('file'), async (re
     const id = 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     const doc = {
       id,
-      name: req.file.originalname,
+      // multer/busboy sometimes mis-decodes non-ASCII (e.g. Devanagari)
+      // filenames as latin1 — re-decoding as utf8 fixes the common case.
+      name: Buffer.from(req.file.originalname, 'latin1').toString('utf8'),
       classNum: String(classNum),
       medium: medium || 'Marathi',
       subject,
