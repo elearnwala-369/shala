@@ -2,18 +2,14 @@
  * Shala AI Backend — E Learn Solutions
  * -------------------------------------
  * Handles:
- *  - PDF upload + text extraction + chunking (server-side, so it works from
- *    ANY browser/device, unlike client-side pdf.js which can be blocked in
- *    sandboxed webviews)
+ *  - PDF upload + text extraction + chapter detection + chunking
+ *    (server-side, so it works from ANY browser/device)
  *  - Keyword-based retrieval over stored chunks (swap for real vector search
  *    later if you move to a vector DB — see NOTES.md)
  *  - Calls the Anthropic API using a server-side API key (never exposed to
  *    the browser) to generate grounded, Marathi-first answers
  *
- * Storage: MongoDB (see lib/db.js) — chosen because Render's free tier has
- * no persistent disk, so anything written to the local filesystem is wiped
- * on every redeploy/restart. Documents, users, and offers all live in
- * MongoDB now, not in data/*.json files.
+ * Storage: MongoDB (see lib/db.js).
  *
  * Run locally:
  *    cp .env.example .env      # then add your real ANTHROPIC_API_KEY + MONGODB_URI
@@ -40,16 +36,45 @@ const PORT = process.env.PORT || 3000;
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-app.use(cors()); // tighten this to your app's domain once deployed — see DEPLOY.md
+app.use(cors());
 app.use(express.json({ limit: '2mb' }));
-app.use('/admin', express.static(path.join(__dirname, 'public'))); // admin.html lives here
+app.use('/admin', express.static(path.join(__dirname, 'public')));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } }); // 30MB cap
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 30 * 1024 * 1024 } });
 
-// ---- Helpers ----
+// ---- Chapter detection ----
+// Marathi chapter/lesson markers. Extend this if a textbook uses different
+// heading words (e.g. एकक, विभाग).
+const CHAPTER_PATTERN = /(धडा|पाठ|प्रकरण|घटक)\s*[-:.]?\s*(\d+)\s*[-:.]?\s*(.*)/;
+
+function splitIntoChapters(fullText) {
+  const lines = fullText.split('\n');
+  const chapters = [];
+  let current = null;
+
+  for (const line of lines) {
+    const match = line.match(CHAPTER_PATTERN);
+    if (match) {
+      if (current) chapters.push(current);
+      const title = line.trim().slice(0, 120); // keep titles reasonably short
+      current = { title, text: '' };
+    }
+    if (current) {
+      current.text += line + '\n';
+    }
+  }
+  if (current) chapters.push(current);
+
+  // No chapter markers found — treat the whole document as one unnamed chapter
+  if (chapters.length === 0) {
+    return [{ title: null, text: fullText }];
+  }
+  return chapters;
+}
+
 function chunkText(fullText, size = 1400, overlap = 150) {
   const chunks = [];
   let buf = '';
@@ -80,7 +105,7 @@ function scoreChunk(qTokens, text) {
 }
 
 // Documents are stored in MongoDB as { id, name, classNum, medium, subject,
-// pages, chunkCount, uploadedAt, chunks: [text, text, ...] }.
+// pages, chunkCount, uploadedAt, chunks: [{text, chapterTitle}, ...] }.
 async function retrieveChunks({ classNum, subject, medium, query, k = 5 }) {
   const filter = { classNum: String(classNum), subject };
   if (medium) filter.medium = medium;
@@ -89,9 +114,11 @@ async function retrieveChunks({ classNum, subject, medium, query, k = 5 }) {
   const qTokens = tokenize(query);
   let scored = [];
   for (const d of candidates) {
-    (d.chunks || []).forEach((text, i) => {
+    (d.chunks || []).forEach((c, i) => {
+      const text = typeof c === 'string' ? c : c.text; // backward-compat with older plain-string chunks
+      const chapterTitle = typeof c === 'string' ? null : c.chapterTitle;
       const s = scoreChunk(qTokens, text);
-      if (s > 0) scored.push({ score: s, text, docName: d.name, chunkIndex: i });
+      if (s > 0) scored.push({ score: s, text, docName: d.name, chunkIndex: i, chapterTitle });
     });
   }
   scored.sort((a, b) => b.score - a.score);
@@ -102,7 +129,7 @@ async function retrieveChunks({ classNum, subject, medium, query, k = 5 }) {
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
-// List uploaded documents (metadata only, not the full chunk text — keeps this light)
+// List uploaded documents (metadata only, not the full chunk text)
 app.get('/api/documents', async (req, res) => {
   try {
     const docs = await getDB().collection('documents')
@@ -114,7 +141,33 @@ app.get('/api/documents', async (req, res) => {
   }
 });
 
-// Upload a PDF: fields classNum, medium, subject (multipart form) + file — admin only
+// List real chapter titles detected in uploaded documents for a class/subject.
+// Used by the student app to show actual textbook chapters instead of the
+// built-in generic list, when a matching PDF has been uploaded.
+app.get('/api/chapters', async (req, res) => {
+  try {
+    const { classNum, subject, medium } = req.query;
+    if (!classNum || !subject) {
+      return res.status(400).json({ error: 'classNum आणि subject आवश्यक आहेत.' });
+    }
+    const filter = { classNum: String(classNum), subject };
+    if (medium) filter.medium = medium;
+    const docs = await getDB().collection('documents')
+      .find(filter, { projection: { chunks: 1, name: 1 } })
+      .toArray();
+
+    const seen = new Map();
+    docs.forEach(d => (d.chunks || []).forEach(c => {
+      const title = typeof c === 'string' ? null : c.chapterTitle;
+      if (title && !seen.has(title)) seen.set(title, { title, docName: d.name });
+    }));
+    res.json([...seen.values()]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Upload a PDF — admin only. Detects chapters and chunks each one separately.
 app.post('/api/documents/upload', requireAdmin, upload.single('file'), async (req, res) => {
   try {
     const { classNum, medium, subject } = req.body;
@@ -124,9 +177,14 @@ app.post('/api/documents/upload', requireAdmin, upload.single('file'), async (re
     if (!req.file) return res.status(400).json({ error: 'PDF फाईल सापडली नाही.' });
 
     const parsed = await pdfParse(req.file.buffer);
-    const chunks = chunkText(parsed.text);
-    const id = 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+    const chapters = splitIntoChapters(parsed.text);
 
+    const chunks = [];
+    chapters.forEach(ch => {
+      chunkText(ch.text).forEach(text => chunks.push({ text, chapterTitle: ch.title }));
+    });
+
+    const id = 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     const doc = {
       id,
       name: req.file.originalname,
@@ -135,12 +193,13 @@ app.post('/api/documents/upload', requireAdmin, upload.single('file'), async (re
       subject,
       pages: parsed.numpages,
       chunkCount: chunks.length,
+      chapterCount: chapters.filter(c => c.title).length,
       uploadedAt: new Date().toISOString(),
       chunks
     };
     await getDB().collection('documents').insertOne(doc);
 
-    res.json({ ok: true, id, pages: parsed.numpages, chunkCount: chunks.length });
+    res.json({ ok: true, id, pages: parsed.numpages, chunkCount: chunks.length, chapterCount: doc.chapterCount });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'PDF प्रक्रिया करताना चूक झाली: ' + err.message });
@@ -178,7 +237,7 @@ app.post('/api/ask', requireAuth, async (req, res) => {
 
     let prompt = question;
     if (top.length) {
-      const context = top.map((c, i) => `[संदर्भ ${i + 1} — ${c.docName}]\n${c.text}`).join('\n\n---\n\n');
+      const context = top.map((c, i) => `[संदर्भ ${i + 1} — ${c.docName}${c.chapterTitle ? ', ' + c.chapterTitle : ''}]\n${c.text}`).join('\n\n---\n\n');
       prompt = `खालील संदर्भ परिच्छेद अपलोड केलेल्या पाठ्यपुस्तकातून घेतलेले आहेत. शक्य असल्यास उत्तर या संदर्भावर आधारित द्या; संदर्भात माहिती नसल्यास सामान्य ज्ञानाचा वापर करून उत्तर द्या, पण संदर्भाशी विसंगत उत्तर देऊ नका.\n\n${context}\n\n---\n\n${systemHint ? systemHint + '\n\n' : ''}प्रश्न: ${question}`;
     } else if (systemHint) {
       prompt = `${systemHint}\n\nप्रश्न: ${question}`;
@@ -194,7 +253,7 @@ app.post('/api/ask', requireAuth, async (req, res) => {
 
     res.json({
       answer,
-      sources: top.map(c => ({ docName: c.docName }))
+      sources: top.map(c => ({ docName: c.docName, chapterTitle: c.chapterTitle }))
     });
   } catch (err) {
     console.error(err);
@@ -202,8 +261,6 @@ app.post('/api/ask', requireAuth, async (req, res) => {
   }
 });
 
-// Connect to MongoDB first, THEN start listening — so no request can arrive
-// before the DB is ready (avoids the "Database not connected yet" error).
 connectDB()
   .then(() => {
     app.listen(PORT, () => {
