@@ -36,14 +36,12 @@ body {
   min-height: 100vh;
 }
 
-/* Noise texture overlay */
 body::before {
   content:''; position:fixed; inset:0;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
   pointer-events:none; z-index:0; opacity:0.5;
 }
 
-/* ===== HEADER ===== */
 header {
   position: sticky; top:0; z-index:100;
   background: var(--deep);
@@ -78,20 +76,17 @@ header {
 .breadcrumb .sep { color:rgba(255,255,255,0.25); }
 .breadcrumb .crumb.active { color:var(--saffron2); font-weight:700; }
 
-/* ===== MAIN ===== */
 .main {
   position:relative; z-index:10;
   max-width:1100px; margin:0 auto;
   padding:32px 24px;
 }
 
-/* ===== SCREEN TRANSITIONS ===== */
 .screen { display:none; animation:fadeIn 0.35s ease; }
 .screen.active { display:block; }
 
 @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
 
-/* ===== SCREEN 1: CLASS SELECT ===== */
 .screen-title {
   font-size:28px; font-weight:800; margin-bottom:6px;
   color: var(--deep);
@@ -144,10 +139,8 @@ header {
   position:relative; z-index:1;
 }
 
-/* Primary class (5-10) — bigger */
 .class-card.primary .class-num { font-size:42px; }
 
-/* ===== SCREEN 2: SUBJECTS ===== */
 .back-btn {
   display:inline-flex; align-items:center; gap:6px;
   background: var(--card);
@@ -188,7 +181,6 @@ header {
 .sub-name { font-size:17px; font-weight:700; }
 .sub-eng { font-size:12px; color:var(--muted); margin-top:2px; }
 
-/* Subject colors */
 .c-orange .sub-icon { background:var(--saffron-pale); }
 .c-green .sub-icon { background:var(--green-pale); }
 .c-blue .sub-icon { background:var(--blue-pale); }
@@ -203,7 +195,6 @@ header {
 .c-purple:hover { border-color:#8B5CF6; }
 .c-teal:hover { border-color:#0D9488; }
 
-/* ===== SCREEN 3: CHAPTERS ===== */
 .chapter-list { display:flex; flex-direction:column; gap:10px; }
 
 .chapter-item {
@@ -234,7 +225,6 @@ header {
 .ch-sub { font-size:12px; color:var(--muted); margin-top:2px; }
 .ch-arrow { margin-left:auto; color:var(--muted); font-size:18px; }
 
-/* ===== SCREEN 4: CHAPTER DETAIL ===== */
 .chapter-hero {
   background: linear-gradient(135deg, var(--deep) 0%, #2D1F0A 100%);
   border-radius:20px; padding:28px 28px 24px;
@@ -250,7 +240,6 @@ header {
 .hero-chapter { font-size:24px; font-weight:800; margin-bottom:4px; }
 .hero-subject { font-size:14px; color:var(--saffron2); }
 
-/* Action Cards */
 .action-grid {
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -276,7 +265,6 @@ header {
 .action-title { font-size:16px; font-weight:800; margin-bottom:4px; }
 .action-desc { font-size:12px; color:var(--muted); line-height:1.5; }
 
-/* Custom Question */
 .custom-q-wrap {
   background:var(--card);
   border:1.5px solid var(--border);
@@ -308,7 +296,6 @@ header {
 .ask-btn:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 6px 20px rgba(232,100,10,0.4); }
 .ask-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
 
-/* ===== SCREEN 5: AI ANSWER ===== */
 .answer-header {
   display:flex; align-items:center; gap:12px; margin-bottom:20px;
 }
@@ -358,7 +345,6 @@ header {
 }
 .ans-btn:hover { border-color:var(--saffron); color:var(--saffron); }
 
-/* Typing */
 .typing { display:flex; gap:5px; align-items:center; padding:8px 0; }
 .typing span {
   width:8px; height:8px; background:var(--saffron);
@@ -367,7 +353,6 @@ header {
 .typing span:nth-child(2){animation-delay:.15s}
 .typing span:nth-child(3){animation-delay:.3s}
 
-/* Toast */
 .toast {
   position:fixed; bottom:24px; right:24px;
   background:var(--green); color:white;
@@ -381,7 +366,6 @@ header {
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 @keyframes bounce { 0%,80%,100%{transform:scale(0.6);opacity:0.5} 40%{transform:scale(1);opacity:1} }
 
-/* ===== HEADER UPLOAD LINK ===== */
 .header-upload-btn {
   display:flex; align-items:center; gap:6px;
   background: linear-gradient(135deg, var(--saffron), var(--saffron2));
@@ -395,7 +379,6 @@ header {
   font-size:10.5px; padding:1px 7px;
 }
 
-/* ===== SCREEN: UPLOAD ===== */
 .upload-filter-row { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:18px; }
 .upload-filter-col { flex:1; min-width:150px; }
 .upload-filter-label { font-size:12px; font-weight:700; color:var(--muted); margin-bottom:6px; }
@@ -438,7 +421,6 @@ header {
 .rag-source-chip { font-size:11px; font-weight:700; background:var(--green-pale); color:var(--green); padding:3px 10px; border-radius:20px; }
 .rag-note { font-size:11.5px; color:var(--muted); margin-top:10px; font-style:italic; }
 
-/* ===== VOICE ===== */
 .mic-btn {
   width:44px; height:44px; flex-shrink:0;
   background:var(--card); border:1.5px solid var(--border); border-radius:10px;
@@ -460,7 +442,6 @@ header {
 </head>
 <body>
 
-<!-- ===== LOGIN SCREEN ===== -->
 <div id="loginScreen" style="max-width:380px;margin:60px auto;padding:0 16px;">
   <div style="text-align:center;margin-bottom:20px;">
     <div style="font-size:40px;">🏫</div>
@@ -486,7 +467,6 @@ header {
   </div>
 </div>
 
-<!-- ===== MAIN APP (hidden until logged in) ===== -->
 <div id="mainApp" style="display:none;">
   <div class="logo-wrap">
     <div class="logo-emblem">🏫</div>
@@ -500,7 +480,6 @@ header {
 
 <div class="main">
 
-  <!-- ===== SCREEN 1: CLASS ===== -->
   <div class="screen active" id="screen-class">
     <div class="screen-title">इयत्ता <span>निवडा</span></div>
     <div class="screen-sub">१ ली ते १० वी — तुमची इयत्ता निवडा</div>
@@ -549,7 +528,6 @@ header {
     </div>
   </div>
 
-  <!-- ===== SCREEN 2: SUBJECTS ===== -->
   <div class="screen" id="screen-subject">
     <button class="back-btn" onclick="goScreen('class')">← मागे</button>
     <div class="screen-title" id="subject-title">इयत्ता ६ वी — <span>विषय</span></div>
@@ -557,7 +535,6 @@ header {
     <div class="subject-grid" id="subjectGrid"></div>
   </div>
 
-  <!-- ===== SCREEN 3: CHAPTERS ===== -->
   <div class="screen" id="screen-chapter">
     <button class="back-btn" onclick="goScreen('subject')">← मागे</button>
     <div class="screen-title" id="chapter-title">गणित — <span>धडे</span></div>
@@ -565,7 +542,6 @@ header {
     <div class="chapter-list" id="chapterList"></div>
   </div>
 
-  <!-- ===== SCREEN 4: CHAPTER DETAIL ===== -->
   <div class="screen" id="screen-detail">
     <button class="back-btn" onclick="goScreen('chapter')">← मागे</button>
     <div class="chapter-hero">
@@ -608,7 +584,6 @@ header {
     </div>
   </div>
 
-  <!-- ===== SCREEN 5: AI ANSWER ===== -->
   <div class="screen" id="screen-answer">
     <button class="back-btn" onclick="goScreen('detail')">← धड्याकडे परत</button>
 
@@ -643,10 +618,9 @@ header {
 </div>
 
 <div class="toast" id="toast">✅ Copied!</div>
-</div><!-- /mainApp -->
+</div>
 
 <script>
-// ===== DATA =====
 const SUBJECTS = {
   '1,2,3,4,5': [
     { id:'marathi', name:'मराठी', eng:'Marathi', icon:'📖', color:'c-orange' },
@@ -698,10 +672,8 @@ const CHAPTERS = {
   }
 };
 
-// Default chapters for missing combos
 function getChapters(subjectId, classNum) {
   if (CHAPTERS[subjectId] && CHAPTERS[subjectId][classNum]) return CHAPTERS[subjectId][classNum];
-  // Generic fallback
   return Array.from({length:10}, (_,i) => `धडा ${i+1}: ${subjectId} - विषय ${i+1}`);
 }
 
@@ -711,19 +683,10 @@ function getSubjects(classNum) {
   return SUBJECTS['9,10'];
 }
 
-// ===== STATE =====
 let state = { class: null, subject: null, chapter: null, mode: null };
 
-// ===== BACKEND CONFIG =====
-// Set this to your deployed backend URL (see DEPLOY.md).
-// Example after deploying on Render: "https://shala-ai-backend.onrender.com"
-const BACKEND_URL = "https://shala-qt28.onrender.com"; // <-- CHANGE THIS before real use
+const BACKEND_URL = "https://shala-qt28.onrender.com";
 
-// ===== AUTH (phone + OTP login) =====
-// Note: session token is kept in memory only (not localStorage) — it resets
-// on page reload. That's a deliberate limitation of this preview build; once
-// you self-host this permanently, switch authToken storage to localStorage
-// so logins persist across visits (a one-line change, ask if you want it).
 let authToken = null;
 let currentUser = null;
 
@@ -810,7 +773,6 @@ showLogin();
 
 const SUBJECT_TAG_MAP = { maths: 'Mathematics', algebra: 'Mathematics', geometry: 'Mathematics', science: 'Science', marathi: 'Marathi', hindi: 'Hindi', english: 'English', social: 'History' };
 
-// ===== NAVIGATION =====
 function goScreen(name) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + name).classList.add('active');
@@ -833,7 +795,6 @@ function updateBreadcrumb(screen) {
   bc.innerHTML = html;
 }
 
-// ===== CLASS SELECT =====
 function selectClass(num) {
   state.class = num;
   document.getElementById('subject-title').innerHTML = `इयत्ता ${num} वी — <span>विषय निवडा</span>`;
@@ -841,7 +802,6 @@ function selectClass(num) {
   goScreen('subject');
 }
 
-// ===== SUBJECTS =====
 function renderSubjects(classNum) {
   const subjects = getSubjects(classNum);
   const grid = document.getElementById('subjectGrid');
@@ -856,21 +816,41 @@ function renderSubjects(classNum) {
   `).join('');
 }
 
-function selectSubject(id, name, icon) {
+async function selectSubject(id, name, icon) {
   state.subject = { id, name, icon };
   document.getElementById('chapter-title').innerHTML = `${icon} ${name} — <span>धडे</span>`;
   document.getElementById('chapter-sub').textContent = `इयत्ता ${state.class} वी • ${name}`;
-  renderChapters(id, state.class);
   goScreen('chapter');
+  await renderChapters(id, state.class);
 }
 
 // ===== CHAPTERS =====
-function renderChapters(subjectId, classNum) {
-  const chapters = getChapters(subjectId, classNum);
+// First tries to fetch real chapters detected from any PDFs the admin has
+// uploaded for this class/subject; falls back to the built-in generic list
+// if none are found or the backend is unreachable.
+async function renderChapters(subjectId, classNum) {
   const list = document.getElementById('chapterList');
-  const numerals = ['०','१','२','३','४','५','६','७','८','९','१०'];
-  list.innerHTML = chapters.map((ch, i) => `
-    <div class="chapter-item" onclick="selectChapter('${ch}', ${i+1})">
+  list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">धडे शोधले जात आहेत...</div>';
+
+  const subjectTag = SUBJECT_TAG_MAP[subjectId] || subjectId;
+  let uploaded = [];
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/chapters?classNum=${encodeURIComponent(classNum)}&subject=${encodeURIComponent(subjectTag)}&medium=Marathi`);
+    if (res.ok) {
+      const data = await res.json();
+      uploaded = (data || []).map(c => c.title).filter(Boolean);
+    }
+  } catch (e) { /* backend unreachable — fall back silently below */ }
+
+  const usingUploaded = uploaded.length > 0;
+  const chapters = usingUploaded ? uploaded : getChapters(subjectId, classNum);
+
+  const banner = usingUploaded
+    ? `<div class="rag-note" style="margin-bottom:14px;font-style:normal;">📘 हे धडे अपलोड केलेल्या पाठ्यपुस्तकावरून घेतले आहेत.</div>`
+    : `<div class="rag-note" style="margin-bottom:14px;">या विषयासाठी अजून PDF अपलोड केलेली नाही — सर्वसाधारण धडे यादी दाखवली आहे.</div>`;
+
+  list.innerHTML = banner + chapters.map((ch, i) => `
+    <div class="chapter-item" onclick='selectChapter(${JSON.stringify(ch)}, ${i+1})'>
       <div class="ch-num">${i+1}</div>
       <div>
         <div class="ch-name">${ch}</div>
@@ -889,7 +869,6 @@ function selectChapter(name, num) {
   goScreen('detail');
 }
 
-// ===== AI INTERACTION =====
 const MODE_QUERY_BIAS = {
   questions: 'स्वाध्याय सराव प्रश्न उदाहरणे',
   explain: '',
@@ -941,7 +920,6 @@ async function askAI(mode, customQuestion = null) {
   const sub = state.subject.name;
   const ch = state.chapter.name;
 
-  // Setup answer screen
   document.getElementById('answerBadge').textContent = m.label;
   document.getElementById('answerBadge').className = `answer-mode-badge ${m.badge}`;
   document.getElementById('answerContext').textContent = `इयत्ता ${cls} वी • ${sub} • ${ch}`;
@@ -972,7 +950,6 @@ async function askAI(mode, customQuestion = null) {
     });
     const data = await res.json();
     if (res.status === 401) {
-      // session expired — send back to login
       logout();
       document.getElementById('loginErr1').textContent = 'तुमचं सत्र कालबाह्य झालं आहे, कृपया पुन्हा लॉगिन करा.';
       return;
@@ -984,13 +961,12 @@ async function askAI(mode, customQuestion = null) {
     }
     if (!res.ok) throw new Error(data.error || 'उत्तर मिळाले नाही.');
     lastAnswer = data.answer || 'उत्तर मिळाले नाही.';
-    lastSources = (data.sources || []).map(s => ({ docName: s.docName, pageInfo: '' }));
+    lastSources = (data.sources || []).map(s => ({ docName: s.docName, pageInfo: s.chapterTitle || '' }));
   } catch (err) {
     lastAnswer = `❌ बॅकएंड सर्व्हरशी संपर्क होत नाही: ${err.message}\n\nBACKEND_URL बरोबर सेट आहे का व सर्व्हर चालू आहे का तपासा (DEPLOY.md पाहा).`;
     lastSources = [];
   }
 
-  // Typewriter
   body.innerHTML = '';
   let i = 0;
   function type() {
@@ -1010,7 +986,7 @@ function renderSources() {
   const el = document.getElementById('answerSources');
   if (!el) return;
   if (lastSources.length) {
-    el.innerHTML = `<div class="rag-source-row">${lastSources.map(c => `<span class="rag-source-chip">📘 ${c.docName} · ${c.pageInfo}</span>`).join('')}</div>`;
+    el.innerHTML = `<div class="rag-source-row">${lastSources.map(c => `<span class="rag-source-chip">📘 ${c.docName}${c.pageInfo ? ' · ' + c.pageInfo : ''}</span>`).join('')}</div>`;
   } else {
     el.innerHTML = `<div class="rag-note">या इयत्ता/विषयासाठी कोणतेही दस्तऐवज अपलोड केलेले नाही — उत्तर सामान्य AI ज्ञानावर आधारित आहे.</div>`;
   }
@@ -1025,7 +1001,7 @@ function askCustom() {
 MODES.custom = {
   label: '✏️ तुमचा प्रश्न',
   badge: 'badge-orange',
-  prompt: (cls, sub, ch) => '' // unused when customQuestion is passed
+  prompt: (cls, sub, ch) => ''
 };
 
 function copyAnswer() {
@@ -1037,7 +1013,6 @@ function copyAnswer() {
   });
 }
 
-// ===== VOICE INPUT (speech-to-text) =====
 const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recognizer = null;
 let listening = false;
@@ -1091,14 +1066,13 @@ function toggleVoiceInput() {
   recognizer.start();
 }
 
-// ===== VOICE OUTPUT (text-to-speech) =====
 let speaking = false;
 
 function populateVoiceSelect() {
   const sel = document.getElementById('voiceSelect');
   if (!sel || !('speechSynthesis' in window)) return;
   const voices = window.speechSynthesis.getVoices();
-  if (!voices.length) return; // list loads async in some browsers, retried via onvoiceschanged
+  if (!voices.length) return;
 
   const marathi = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('mr'));
   const hindi = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith('hi'));
@@ -1156,10 +1130,9 @@ function toggleSpeakAnswer() {
   utter.onend = () => { speaking = false; btn.classList.remove('speaking'); btn.textContent = '🔊 ऐका'; };
   utter.onerror = () => { speaking = false; btn.classList.remove('speaking'); btn.textContent = '🔊 ऐका'; };
 
-  window.speechSynthesis.cancel(); // stop anything queued
+  window.speechSynthesis.cancel();
   window.speechSynthesis.speak(utter);
 }
-// Some browsers load voice list asynchronously — warm it up.
 if ('speechSynthesis' in window) {
   window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); populateVoiceSelect(); };
   populateVoiceSelect();
